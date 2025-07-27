@@ -120,7 +120,7 @@ export default function LoginScreen() {
         {loginError && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{loginError}</Text>
-            {loginError.includes('geen accounts geregistreerd') && (
+            {(loginError.includes('geen accounts geregistreerd') || loginError.includes('apparaat-specifiek')) && (
               <TouchableOpacity 
                 style={styles.registerButton}
                 onPress={() => router.push('/auth/register')}

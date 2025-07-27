@@ -348,6 +348,7 @@ export default function SettingsScreen() {
           </Text>
           <Text style={styles.dataLocationBullet}>• Gegevens blijven privé op jouw apparaat</Text>
           <Text style={styles.dataLocationBullet}>• Meerdere accounts mogelijk op hetzelfde apparaat</Text>
+          <Text style={styles.dataLocationBullet}>• Accounts zijn APPARAAT-SPECIFIEK (iOS ≠ Android)</Text>
           <Text style={styles.dataLocationBullet}>• Geen cloud synchronisatie tussen apparaten</Text>
           <Text style={styles.dataLocationBullet}>• Bij app verwijdering gaan gegevens verloren</Text>
           <Text style={styles.dataLocationBullet}>• Maak regelmatig een export via &apos;Gegevens Exporteren&apos;</Text>

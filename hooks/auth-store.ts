@@ -206,9 +206,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         
         // Check if there are any users at all
         if (Object.keys(allUsers).length === 0) {
-          throw new Error('Er zijn nog geen accounts geregistreerd. Maak eerst een account aan.');
+          throw new Error('Er zijn nog geen accounts geregistreerd op dit apparaat. Maak eerst een account aan.');
         } else {
-          throw new Error('Geen account gevonden met dit e-mailadres. Controleer je e-mailadres of maak een nieuw account aan.');
+          throw new Error('Geen account gevonden met dit e-mailadres op dit apparaat. Accounts zijn apparaat-specifiek - maak een nieuw account aan of gebruik het apparaat waar je je oorspronkelijk hebt geregistreerd.');
         }
       }
       
