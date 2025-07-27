@@ -23,6 +23,14 @@ function RootLayoutNav() {
     }
   }, [isLoading, isAuthenticated, router]);
 
+  // Handle logout redirect
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      // Clear any existing navigation state
+      router.replace('/auth/register');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
   if (isLoading) {
     return null; // Show nothing while checking auth
   }
@@ -44,8 +52,7 @@ function RootLayoutNav() {
           <Stack.Screen 
             name="(tabs)" 
             options={{ 
-              headerShown: false,
-              title: ""
+              headerShown: false
             }} 
           />
           <Stack.Screen name="birds/[id]" options={{ title: "Vogeldetails" }} />

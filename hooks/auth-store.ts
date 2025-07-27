@@ -180,6 +180,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       // Debug: Check all stored users
       const allUsers = await getAllUsers();
       console.log('All stored users:', Object.keys(allUsers));
+      console.log('All users data:', allUsers);
       console.log('Looking for email:', normalizedEmail);
       
       const user = await getUserByEmail(normalizedEmail);
@@ -188,6 +189,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (!user) {
         console.log('No user found with email:', normalizedEmail);
         console.log('Available emails:', Object.keys(allUsers));
+        
+        // Check if there's a user with similar email (case mismatch)
+        const similarEmails = Object.keys(allUsers).filter(email => 
+          email.toLowerCase() === normalizedEmail
+        );
+        console.log('Similar emails found:', similarEmails);
+        
         throw new Error('Geen account gevonden met dit e-mailadres');
       }
       
@@ -221,6 +229,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       queryClient.setQueryData(['currentUserEmail'], null);
       // Clear all other cached data
       queryClient.clear();
+      // Invalidate queries to trigger re-fetch
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUserEmail'] });
     },
   });
 

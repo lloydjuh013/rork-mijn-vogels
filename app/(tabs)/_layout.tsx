@@ -15,7 +15,6 @@ export default function TabLayout() {
         },
         headerShown: false,
         tabBarShowLabel: false,
-        headerTitle: "",
       }}
     >
       <Tabs.Screen
