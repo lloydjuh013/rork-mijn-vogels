@@ -1,30 +1,19 @@
-import { useState } from 'react';
 import { useAuth } from './auth-store';
 
+// In free version, all actions are allowed
 export const usePremiumAction = () => {
-  const { canPerformAction, requiresPremium } = useAuth();
-  const [showPremiumGate, setShowPremiumGate] = useState(false);
-  const [currentFeature, setCurrentFeature] = useState('');
+  const { canPerformAction } = useAuth();
 
   const executeAction = (action: () => void, featureName: string) => {
-    if (canPerformAction()) {
-      action();
-    } else {
-      setCurrentFeature(featureName);
-      setShowPremiumGate(true);
-    }
-  };
-
-  const closePremiumGate = () => {
-    setShowPremiumGate(false);
-    setCurrentFeature('');
+    // All actions are allowed in free version
+    action();
   };
 
   return {
     executeAction,
-    showPremiumGate,
-    currentFeature,
-    closePremiumGate,
-    requiresPremium: requiresPremium(),
+    showPremiumGate: false,
+    currentFeature: '',
+    closePremiumGate: () => {},
+    requiresPremium: false,
   };
 };

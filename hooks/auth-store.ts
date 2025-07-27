@@ -10,8 +10,6 @@ type AuthState = {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  subscriptionStatus: 'trial' | 'active' | 'expired';
-  daysLeftInTrial: number;
 };
 
 type LoginData = {
@@ -73,23 +71,9 @@ const generateUserId = (): string => {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
 };
 
-const calculateDaysLeft = (trialEndsAt: Date): number => {
-  const now = new Date();
-  const endDate = new Date(trialEndsAt);
-  const diffTime = endDate.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return Math.max(0, diffDays);
-};
 
-const getSubscriptionStatus = (user: User): 'trial' | 'active' | 'expired' => {
-  if (user.subscriptionStatus === 'active') return 'active';
-  
-  const now = new Date();
-  const trialEnd = new Date(user.trialEndsAt);
-  
-  if (now < trialEnd) return 'trial';
-  return 'expired';
-};
+
+
 
 // Create the auth context hook
 export const [AuthProvider, useAuth] = createContextHook(() => {
@@ -114,16 +98,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     mutationFn: async (data: RegisterData): Promise<User> => {
       // Simulate API call - in real app, this would call your backend
       const now = new Date();
-      const trialEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
       
       const user: User = {
         id: generateUserId(),
         email: data.email,
         name: data.name,
         createdAt: now,
-        trialStartedAt: now,
-        trialEndsAt: trialEnd,
-        subscriptionStatus: 'trial',
         isActive: true,
       };
 
@@ -173,24 +153,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     },
   });
 
-  // Update subscription mutation
-  const updateSubscriptionMutation = useMutation({
-    mutationFn: async (status: 'active' | 'expired'): Promise<User> => {
-      const currentUser = userQuery.data;
-      if (!currentUser) throw new Error('No user found');
-      
-      const updatedUser: User = {
-        ...currentUser,
-        subscriptionStatus: status,
-      };
-      
-      await storeUser(updatedUser);
-      return updatedUser;
-    },
-    onSuccess: (user) => {
-      queryClient.setQueryData(['user'], user);
-    },
-  });
+
 
   // Computed values
   const user = userQuery.data;
@@ -207,17 +170,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     isLoading 
   });
   
-  const subscriptionStatus = user ? getSubscriptionStatus(user) : 'expired';
-  const daysLeftInTrial = user ? calculateDaysLeft(user.trialEndsAt) : 0;
-  
-  // Check if user can perform premium actions
+  // All users can perform all actions in free version
   const canPerformAction = (): boolean => {
-    return subscriptionStatus === 'trial' || subscriptionStatus === 'active';
-  };
-
-  // Show upgrade prompt for expired users
-  const requiresPremium = (): boolean => {
-    return subscriptionStatus === 'expired';
+    return true;
   };
 
   return {
@@ -225,18 +180,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     user,
     isAuthenticated,
     isLoading,
-    subscriptionStatus,
-    daysLeftInTrial,
     
     // Actions
     register: registerMutation.mutate,
     login: loginMutation.mutate,
     logout: logoutMutation.mutate,
-    updateSubscription: updateSubscriptionMutation.mutate,
     
     // Helpers
     canPerformAction,
-    requiresPremium,
     
     // Loading states
     isRegistering: registerMutation.isPending,

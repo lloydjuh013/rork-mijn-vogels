@@ -2,11 +2,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
-import { View, Image, StyleSheet, Platform } from "react-native";
+import { View, Image, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BirdStoreProvider } from "@/hooks/bird-store";
 import { AuthProvider, useAuth } from "@/hooks/auth-store";
-import { initializeStripe } from "@/utils/stripe";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -42,7 +41,13 @@ function RootLayoutNav() {
       {isAuthenticated ? (
         // Authenticated routes
         <>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="(tabs)" 
+            options={{ 
+              headerShown: false,
+              title: "" // Remove title to prevent tab showing
+            }} 
+          />
           <Stack.Screen name="birds/[id]" options={{ title: "Vogeldetails" }} />
           <Stack.Screen name="birds/add" options={{ title: "Vogel Toevoegen" }} />
           <Stack.Screen name="birds/edit/[id]" options={{ title: "Vogel Bewerken" }} />
@@ -80,18 +85,9 @@ function SplashScreenComponent() {
 
 export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
-  const [stripeInitialized, setStripeInitialized] = useState(false);
 
   useEffect(() => {
     const initApp = async () => {
-      // Initialize Stripe (only on mobile)
-      try {
-        await initializeStripe();
-      } catch (error) {
-        console.log('Stripe initialization skipped for web:', error);
-      }
-      setStripeInitialized(true);
-      
       // Show splash for minimum time
       const timer = setTimeout(() => {
         setShowSplash(false);
@@ -104,12 +100,11 @@ export default function RootLayout() {
     initApp();
   }, []);
 
-  if (showSplash || !stripeInitialized) {
+  if (showSplash) {
     return <SplashScreenComponent />;
   }
 
-  // Conditionally wrap with StripeProvider only on mobile
-  const AppContent = () => (
+  return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BirdStoreProvider>
@@ -119,18 +114,6 @@ export default function RootLayout() {
         </BirdStoreProvider>
       </AuthProvider>
     </QueryClientProvider>
-  );
-
-  if (Platform.OS === 'web') {
-    return <AppContent />;
-  }
-
-  // Mobile with Stripe provider
-  const StripeProvider = require('@stripe/stripe-react-native').StripeProvider;
-  return (
-    <StripeProvider publishableKey="pk_live_51LuGHqLXJutBmJsVXkoK4jW43u8mEpVnjkf945va8b2OOh4xtMZlBK6JD1VEuBikpQhlMxYGCVPdZYdzVnG25Ete00Ej8Ej8Ej">
-      <AppContent />
-    </StripeProvider>
   );
 }
 

@@ -73,10 +73,5 @@ export type User = {
   email: string;
   name: string;
   createdAt: Date;
-  trialStartedAt: Date;
-  trialEndsAt: Date;
-  subscriptionStatus: 'trial' | 'active' | 'expired';
-  stripeCustomerId?: string;
-  subscriptionId?: string;
   isActive: boolean;
 };
