@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, Alert, Modal, TouchableOpacity, TextInput } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { MapPin, Edit, Trash2, Bird as BirdIcon, Plus, X } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useBirdStore } from '@/hooks/bird-store';
@@ -89,7 +89,9 @@ export default function AviaryDetailScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <>
+      <Stack.Screen options={{ title: aviary.name }} />
+      <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.aviaryName}>{aviary.name}</Text>
         <View style={styles.locationContainer}>
@@ -278,6 +280,7 @@ export default function AviaryDetailScreen() {
         </View>
       </Modal>
     </ScrollView>
+    </>
   );
 }
 

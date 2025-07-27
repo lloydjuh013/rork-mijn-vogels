@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, ScrollView, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import Colors from '@/constants/colors';
 import { useBirdStore } from '@/hooks/bird-store';
 import Button from '@/components/Button';
@@ -22,17 +22,17 @@ export default function AddAviaryScreen() {
     const newErrors: Record<string, string> = {};
     
     if (!name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = 'Naam is verplicht';
     }
     
     if (!location.trim()) {
-      newErrors.location = 'Location is required';
+      newErrors.location = 'Locatie is verplicht';
     }
     
     if (!capacity.trim()) {
-      newErrors.capacity = 'Capacity is required';
+      newErrors.capacity = 'Capaciteit is verplicht';
     } else if (isNaN(Number(capacity)) || Number(capacity) <= 0) {
-      newErrors.capacity = 'Capacity must be a positive number';
+      newErrors.capacity = 'Capaciteit moet een positief getal zijn';
     }
     
     setErrors(newErrors);
@@ -56,21 +56,23 @@ export default function AddAviaryScreen() {
       router.back();
     } catch (error) {
       console.error('Error submitting aviary form:', error);
-      Alert.alert('Error', 'Failed to save aviary data. Please try again.');
+      Alert.alert('Fout', 'Kon kooi gegevens niet opslaan. Probeer opnieuw.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <>
+      <Stack.Screen options={{ title: 'Voeg kooi toe' }} />
+      <ScrollView style={styles.container}>
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Name *</Text>
+        <Text style={styles.label}>Naam *</Text>
         <TextInput
           style={[styles.input, errors.name && styles.inputError]}
           value={name}
           onChangeText={setName}
-          placeholder="Enter aviary name"
+          placeholder="Voer kooi naam in"
           testID="input-name"
         />
         {errors.name && (
@@ -79,12 +81,12 @@ export default function AddAviaryScreen() {
       </View>
       
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Location *</Text>
+        <Text style={styles.label}>Locatie *</Text>
         <TextInput
           style={[styles.input, errors.location && styles.inputError]}
           value={location}
           onChangeText={setLocation}
-          placeholder="Enter location"
+          placeholder="Voer locatie in"
           testID="input-location"
         />
         {errors.location && (
@@ -93,12 +95,12 @@ export default function AddAviaryScreen() {
       </View>
       
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Capacity *</Text>
+        <Text style={styles.label}>Capaciteit *</Text>
         <TextInput
           style={[styles.input, errors.capacity && styles.inputError]}
           value={capacity}
           onChangeText={setCapacity}
-          placeholder="Enter capacity"
+          placeholder="Voer capaciteit in"
           keyboardType="numeric"
           testID="input-capacity"
         />
@@ -108,12 +110,12 @@ export default function AddAviaryScreen() {
       </View>
       
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Notes</Text>
+        <Text style={styles.label}>Notities</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={notes}
           onChangeText={setNotes}
-          placeholder="Enter notes about this aviary"
+          placeholder="Voer notities over deze kooi in"
           multiline
           numberOfLines={4}
           testID="input-notes"
@@ -122,19 +124,20 @@ export default function AddAviaryScreen() {
       
       <View style={styles.buttonContainer}>
         <Button
-          title="Cancel"
+          title="Annuleren"
           onPress={() => router.back()}
           type="outline"
           testID="button-cancel"
         />
         <Button
-          title="Add Aviary"
+          title="Kooi Toevoegen"
           onPress={handleSubmit}
           loading={isSubmitting}
           testID="button-submit"
         />
       </View>
     </ScrollView>
+    </>
   );
 }
 

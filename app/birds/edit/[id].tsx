@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Bird } from '@/types/bird';
 import { useBirdStore } from '@/hooks/bird-store';
 import BirdForm from '@/components/BirdForm';
@@ -21,5 +21,10 @@ export default function EditBirdScreen() {
     router.back();
   };
 
-  return <BirdForm initialBird={bird} onSubmit={handleSubmit} />;
+  return (
+    <>
+      <Stack.Screen options={{ title: `${bird.name || bird.ringNumber} bewerken` }} />
+      <BirdForm initialBird={bird} onSubmit={handleSubmit} />
+    </>
+  );
 }

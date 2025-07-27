@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Calendar, Trash2, Heart, Egg, Plus } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useBirdStore } from '@/hooks/bird-store';
@@ -57,14 +57,16 @@ export default function CoupleDetailScreen() {
   };
 
   const addNest = () => {
-    router.push('/nests/add' as any);
+    router.push(`/nests/add?coupleId=${id}` as any);
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <>
+      <Stack.Screen options={{ title: `Koppel #${id.slice(0, 8)}` }} />
+      <ScrollView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.coupleInfo}>
-          <Text style={styles.coupleTitle}>Couple #{id.slice(0, 8)}</Text>
+          <Text style={styles.coupleTitle}>Koppel #{id.slice(0, 8)}</Text>
           <View style={[styles.statusBadge, { 
             backgroundColor: couple.active ? Colors.success : Colors.textLighter 
           }]}>
@@ -204,6 +206,7 @@ export default function CoupleDetailScreen() {
         />
       </View>
     </ScrollView>
+    </>
   );
 }
 

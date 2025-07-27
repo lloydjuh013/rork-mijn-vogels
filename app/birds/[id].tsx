@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Calendar, MapPin, Edit, Trash2, Heart, TreePine } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useBirdStore } from '@/hooks/bird-store';
@@ -71,7 +71,9 @@ export default function BirdDetailScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <>
+      <Stack.Screen options={{ title: bird.name || bird.ringNumber }} />
+      <ScrollView style={styles.container}>
       <View style={styles.header}>
         {bird.imageUri ? (
           <Image source={{ uri: bird.imageUri }} style={styles.birdImage} />
@@ -211,6 +213,7 @@ export default function BirdDetailScreen() {
         </View>
       </View>
     </ScrollView>
+    </>
   );
 }
 
