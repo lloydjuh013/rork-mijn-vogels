@@ -21,6 +21,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Dashboard",
+          headerShown: false,
           tabBarIcon: ({ color }) => <Home color={color} size={24} />,
         }}
       />
@@ -28,6 +29,7 @@ export default function TabLayout() {
         name="birds"
         options={{
           title: "Vogels",
+          headerShown: false,
           tabBarIcon: ({ color }) => <Bird color={color} size={24} />,
         }}
       />
@@ -35,6 +37,7 @@ export default function TabLayout() {
         name="couples"
         options={{
           title: "Koppels",
+          headerShown: false,
           tabBarIcon: ({ color }) => <Users color={color} size={24} />,
         }}
       />
@@ -42,6 +45,7 @@ export default function TabLayout() {
         name="aviaries"
         options={{
           title: "Kooien",
+          headerShown: false,
           tabBarIcon: ({ color }) => <Calendar color={color} size={24} />,
         }}
       />
@@ -49,6 +53,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: "Instellingen",
+          headerShown: false,
           tabBarIcon: ({ color }) => <Settings color={color} size={24} />,
         }}
       />
