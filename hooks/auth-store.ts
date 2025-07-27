@@ -227,21 +227,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async (): Promise<void> => {
-      console.log('Logging out user');
+      console.log('Starting logout process...');
       await clearCurrentUser();
       console.log('Current user cleared from storage');
     },
     onSuccess: () => {
-      console.log('Logout successful, clearing queries');
-      // Set queries to null to trigger immediate state change
+      console.log('Logout successful, clearing all data');
+      // Immediately set queries to null to trigger state change
       queryClient.setQueryData(['currentUser'], null);
       queryClient.setQueryData(['currentUserEmail'], null);
-      // Clear all cached data
+      
+      // Clear all cached data including bird data
       queryClient.clear();
-      // Force refetch of auth queries
+      
+      // Force immediate refetch of auth queries
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       queryClient.invalidateQueries({ queryKey: ['currentUserEmail'] });
-      console.log('All queries cleared and invalidated');
+      
+      console.log('All queries cleared and user logged out');
     },
     onError: (error) => {
       console.error('Logout failed:', error);
@@ -279,7 +282,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     // Actions
     register: registerMutation.mutate,
     login: loginMutation.mutate,
-    logout: logoutMutation.mutate,
+    logout: logoutMutation.mutateAsync, // Use mutateAsync to return a promise
     
     // Helpers
     canPerformAction,

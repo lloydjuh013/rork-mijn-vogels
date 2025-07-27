@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, Switch, ScrollView, Alert, TouchableOpacity, Share, Platform, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { HelpCircle, Trash2, Download, Upload, Bell, TreePine, Mail, Globe, LogOut } from 'lucide-react-native';
 
 import Colors from '@/constants/colors';
@@ -11,6 +12,7 @@ import { useAuth } from '@/hooks/auth-store';
 
 export default function SettingsScreen() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { birds, couples, aviaries, nests } = useBirdStore();
   const { user, logout, isLoggingOut } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -224,9 +226,17 @@ export default function SettingsScreen() {
         { 
           text: 'Uitloggen', 
           style: 'destructive',
-          onPress: () => {
-            console.log('Starting logout process...');
-            logout();
+          onPress: async () => {
+            try {
+              console.log('Starting logout process...');
+              await logout();
+              console.log('Logout completed, navigating to login...');
+              // Force navigation to login screen
+              router.replace('/auth/login');
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Fout', 'Er ging iets mis bij het uitloggen. Probeer opnieuw.');
+            }
           }
         }
       ]
