@@ -96,6 +96,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterData): Promise<User> => {
+      console.log('Starting registration for:', data.email);
+      
+      // Check if user already exists
+      const existingUser = await getStoredUser();
+      if (existingUser && existingUser.email === data.email) {
+        throw new Error('Er bestaat al een account met dit e-mailadres');
+      }
+      
       // Simulate API call - in real app, this would call your backend
       const now = new Date();
       
@@ -107,15 +115,26 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         isActive: true,
       };
 
+      console.log('Created user:', user);
+
       // Store user and token
       await storeUser(user);
       await storeAuthToken(user.id); // Using user ID as token for simplicity
       
+      console.log('User stored successfully');
+      
       return user;
     },
     onSuccess: (user) => {
+      console.log('Registration successful, updating queries');
       queryClient.setQueryData(['user'], user);
       queryClient.setQueryData(['authToken'], user.id);
+      // Force refetch to ensure UI updates
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      queryClient.invalidateQueries({ queryKey: ['authToken'] });
+    },
+    onError: (error) => {
+      console.error('Registration failed:', error);
     },
   });
 

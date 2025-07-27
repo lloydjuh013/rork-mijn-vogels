@@ -45,7 +45,8 @@ function RootLayoutNav() {
             name="(tabs)" 
             options={{ 
               headerShown: false,
-              title: "" // Remove title to prevent tab showing
+              title: "",
+              presentation: "card"
             }} 
           />
           <Stack.Screen name="birds/[id]" options={{ title: "Vogeldetails" }} />

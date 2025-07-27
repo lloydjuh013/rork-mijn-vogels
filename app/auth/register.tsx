@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/auth-store';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { register, isRegistering, registerError } = useAuth();
+  const { register, isRegistering, registerError, isAuthenticated } = useAuth();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -21,6 +21,8 @@ export default function RegisterScreen() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const handleRegister = () => {
+    console.log('Register button pressed');
+    
     // Validation
     if (!formData.name.trim()) {
       Alert.alert('Fout', 'Vul je naam in');
@@ -52,12 +54,21 @@ export default function RegisterScreen() {
       return;
     }
 
+    console.log('All validation passed, calling register');
     register({
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
       password: formData.password,
     });
   };
+  
+  // Redirect to main app when authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      console.log('User is now authenticated, redirecting to main app');
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated, router]);
 
   const openWebsite = () => {
     Linking.openURL('https://mybird.app');
@@ -192,21 +203,16 @@ export default function RegisterScreen() {
         )}
 
         <Button
-          title="Account Aanmaken"
+          title={isRegistering ? "Account wordt aangemaakt..." : "Account Aanmaken"}
           onPress={handleRegister}
           type="primary"
           disabled={isRegistering}
+          loading={isRegistering}
+          fullWidth={true}
           testID="register-button"
         />
 
-        <View style={styles.trialInfo}>
-          <Text style={styles.trialText}>
-            🎉 Start je 30 dagen gratis proefperiode
-          </Text>
-          <Text style={styles.trialSubtext}>
-            Daarna €9,95 per maand. Altijd opzegbaar.
-          </Text>
-        </View>
+
       </View>
 
       <View style={styles.footer}>
