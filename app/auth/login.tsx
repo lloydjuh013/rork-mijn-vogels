@@ -8,13 +8,21 @@ import { useAuth } from '@/hooks/auth-store';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, isLoggingIn, loginError } = useAuth();
+  const { login, isLoggingIn, loginError, isAuthenticated } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Redirect to main app when authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      console.log('User is now authenticated, redirecting to main app');
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated, router]);
 
   const handleLogin = () => {
     // Validation
@@ -112,6 +120,14 @@ export default function LoginScreen() {
         {loginError && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{loginError}</Text>
+            {loginError.includes('geen accounts geregistreerd') && (
+              <TouchableOpacity 
+                style={styles.registerButton}
+                onPress={() => router.push('/auth/register')}
+              >
+                <Text style={styles.registerButtonText}>Maak nu een account aan</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -245,5 +261,18 @@ const styles = StyleSheet.create({
   contactText: {
     fontSize: 14,
     color: Colors.textLight,
+  },
+  registerButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    alignSelf: 'center',
+  },
+  registerButtonText: {
+    color: Colors.cardBackground,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

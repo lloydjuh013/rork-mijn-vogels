@@ -211,6 +211,12 @@ export default function RegisterScreen() {
           fullWidth={true}
           testID="register-button"
         />
+        
+        <View style={styles.debugInfo}>
+          <Text style={styles.debugText}>
+            💡 Tip: Na registratie wordt je automatisch ingelogd
+          </Text>
+        </View>
 
 
       </View>
@@ -375,5 +381,17 @@ const styles = StyleSheet.create({
   contactText: {
     fontSize: 14,
     color: Colors.textLight,
+  },
+  debugInfo: {
+    backgroundColor: Colors.primary + '20',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  debugText: {
+    color: Colors.primary,
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

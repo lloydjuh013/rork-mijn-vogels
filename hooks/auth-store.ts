@@ -180,7 +180,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       // Debug: Check all stored users
       const allUsers = await getAllUsers();
       console.log('All stored users:', Object.keys(allUsers));
-      console.log('All users data:', allUsers);
+      console.log('Total users in storage:', Object.keys(allUsers).length);
       console.log('Looking for email:', normalizedEmail);
       
       // Try to find user with exact email match
@@ -203,7 +203,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (!user) {
         console.log('No user found with email:', normalizedEmail);
         console.log('Available emails:', Object.keys(allUsers));
-        throw new Error('Geen account gevonden met dit e-mailadres');
+        
+        // Check if there are any users at all
+        if (Object.keys(allUsers).length === 0) {
+          throw new Error('Er zijn nog geen accounts geregistreerd. Maak eerst een account aan.');
+        } else {
+          throw new Error('Geen account gevonden met dit e-mailadres. Controleer je e-mailadres of maak een nieuw account aan.');
+        }
       }
       
       // In real app, you'd validate password hash here
