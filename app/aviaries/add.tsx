@@ -1,0 +1,182 @@
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, TextInput, ScrollView, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
+import Colors from '@/constants/colors';
+import { useBirdStore } from '@/hooks/bird-store';
+import Button from '@/components/Button';
+import { Aviary } from '@/types/bird';
+
+export default function AddAviaryScreen() {
+  const router = useRouter();
+  const { addAviary } = useBirdStore();
+  
+  const [name, setName] = useState('');
+  const [location, setLocation] = useState('');
+  const [capacity, setCapacity] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleSubmit = () => {
+    // Validate form
+    const newErrors: Record<string, string> = {};
+    
+    if (!name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+    
+    if (!location.trim()) {
+      newErrors.location = 'Location is required';
+    }
+    
+    if (!capacity.trim()) {
+      newErrors.capacity = 'Capacity is required';
+    } else if (isNaN(Number(capacity)) || Number(capacity) <= 0) {
+      newErrors.capacity = 'Capacity must be a positive number';
+    }
+    
+    setErrors(newErrors);
+    
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const aviaryData: Aviary = {
+        id: Date.now().toString(),
+        name,
+        location,
+        capacity: Number(capacity),
+        notes: notes || undefined,
+      };
+      
+      addAviary(aviaryData);
+      router.back();
+    } catch (error) {
+      console.error('Error submitting aviary form:', error);
+      Alert.alert('Error', 'Failed to save aviary data. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Name *</Text>
+        <TextInput
+          style={[styles.input, errors.name && styles.inputError]}
+          value={name}
+          onChangeText={setName}
+          placeholder="Enter aviary name"
+          testID="input-name"
+        />
+        {errors.name && (
+          <Text style={styles.errorText}>{errors.name}</Text>
+        )}
+      </View>
+      
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Location *</Text>
+        <TextInput
+          style={[styles.input, errors.location && styles.inputError]}
+          value={location}
+          onChangeText={setLocation}
+          placeholder="Enter location"
+          testID="input-location"
+        />
+        {errors.location && (
+          <Text style={styles.errorText}>{errors.location}</Text>
+        )}
+      </View>
+      
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Capacity *</Text>
+        <TextInput
+          style={[styles.input, errors.capacity && styles.inputError]}
+          value={capacity}
+          onChangeText={setCapacity}
+          placeholder="Enter capacity"
+          keyboardType="numeric"
+          testID="input-capacity"
+        />
+        {errors.capacity && (
+          <Text style={styles.errorText}>{errors.capacity}</Text>
+        )}
+      </View>
+      
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Notes</Text>
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Enter notes about this aviary"
+          multiline
+          numberOfLines={4}
+          testID="input-notes"
+        />
+      </View>
+      
+      <View style={styles.buttonContainer}>
+        <Button
+          title="Cancel"
+          onPress={() => router.back()}
+          type="outline"
+          testID="button-cancel"
+        />
+        <Button
+          title="Add Aviary"
+          onPress={handleSubmit}
+          loading={isSubmitting}
+          testID="button-submit"
+        />
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: Colors.background,
+  },
+  formGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  inputError: {
+    borderColor: Colors.danger,
+  },
+  errorText: {
+    color: Colors.danger,
+    fontSize: 14,
+    marginTop: 4,
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    marginBottom: 40,
+  },
+});
