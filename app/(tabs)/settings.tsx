@@ -102,12 +102,12 @@ export default function SettingsScreen() {
         textContent += `KOPPELS (${couples.length})\n`;
         textContent += `========\n`;
         couples.forEach((couple, index) => {
-          const maleBird = birds.find(b => b.id === couple.maleBirdId);
-          const femaleBird = birds.find(b => b.id === couple.femaleBirdId);
+          const maleBird = birds.find(b => b.id === couple.maleId);
+          const femaleBird = birds.find(b => b.id === couple.femaleId);
           textContent += `${index + 1}. Koppel\n`;
           textContent += `   Man: ${maleBird?.name || 'Onbekend'} (${maleBird?.ringNumber || 'Geen ring'})\n`;
           textContent += `   Vrouw: ${femaleBird?.name || 'Onbekend'} (${femaleBird?.ringNumber || 'Geen ring'})\n`;
-          textContent += `   Gekoppeld op: ${new Date(couple.pairedDate).toLocaleDateString('nl-NL')}\n`;
+          textContent += `   Seizoen: ${couple.season}\n`;
           textContent += `   Actief: ${couple.active ? 'Ja' : 'Nee'}\n`;
           if (couple.notes) textContent += `   Notities: ${couple.notes}\n`;
           textContent += `\n`;
@@ -121,9 +121,8 @@ export default function SettingsScreen() {
         aviaries.forEach((aviary, index) => {
           const aviaryBirds = birds.filter(b => b.aviaryId === aviary.id);
           textContent += `${index + 1}. ${aviary.name}\n`;
-          textContent += `   Type: ${aviary.type}\n`;
+          textContent += `   Capaciteit: ${aviary.capacity}\n`;
           textContent += `   Locatie: ${aviary.location}\n`;
-          textContent += `   Afmetingen: ${aviary.dimensions}\n`;
           textContent += `   Vogels: ${aviaryBirds.length}\n`;
           if (aviary.notes) textContent += `   Notities: ${aviary.notes}\n`;
           textContent += `\n`;
@@ -139,7 +138,7 @@ export default function SettingsScreen() {
           textContent += `${index + 1}. Nest\n`;
           textContent += `   Koppel ID: ${nest.coupleId}\n`;
           textContent += `   Start datum: ${new Date(nest.startDate).toLocaleDateString('nl-NL')}\n`;
-          if (nest.endDate) textContent += `   Eind datum: ${new Date(nest.endDate).toLocaleDateString('nl-NL')}\n`;
+          if (nest.eggCount) textContent += `   Aantal eieren: ${nest.eggCount}\n`;
           textContent += `   Actief: ${nest.active ? 'Ja' : 'Nee'}\n`;
           if (nest.notes) textContent += `   Notities: ${nest.notes}\n`;
           textContent += `\n`;
