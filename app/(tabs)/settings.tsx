@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, Switch, ScrollView, Alert, TouchableOpacity, Sh
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { HelpCircle, Trash2, Download, Upload, Bell, TreePine, Mail, Globe, LogOut } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+
 import Colors from '@/constants/colors';
 import Button from '@/components/Button';
 import { useBirdStore } from '@/hooks/bird-store';
@@ -11,7 +11,6 @@ import { useAuth } from '@/hooks/auth-store';
 
 export default function SettingsScreen() {
   const queryClient = useQueryClient();
-  const router = useRouter();
   const { birds, couples, aviaries, nests } = useBirdStore();
   const { user, logout, isLoggingOut } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -134,7 +133,6 @@ export default function SettingsScreen() {
         textContent += `NESTEN (${nests.length})\n`;
         textContent += `=======\n`;
         nests.forEach((nest, index) => {
-          const couple = couples.find(c => c.id === nest.coupleId);
           textContent += `${index + 1}. Nest\n`;
           textContent += `   Koppel ID: ${nest.coupleId}\n`;
           textContent += `   Start datum: ${new Date(nest.startDate).toLocaleDateString('nl-NL')}\n`;
@@ -226,9 +224,14 @@ export default function SettingsScreen() {
         { 
           text: 'Uitloggen', 
           style: 'destructive',
-          onPress: () => {
-            logout();
-            router.replace('/auth/register');
+          onPress: async () => {
+            try {
+              await logout();
+              // Navigation will be handled by the auth state change in _layout.tsx
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Fout', 'Kon niet uitloggen. Probeer opnieuw.');
+            }
           }
         }
       ]
