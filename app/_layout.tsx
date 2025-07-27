@@ -46,8 +46,7 @@ function RootLayoutNav() {
             options={{ 
               headerShown: false,
               title: "",
-              presentation: "card",
-              href: null
+              presentation: "card"
             }} 
           />
           <Stack.Screen name="birds/[id]" options={{ title: "Vogeldetails" }} />

@@ -19,6 +19,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
   const { aviaries, birds } = useBirdStore();
   
   const [ringNumber, setRingNumber] = useState(initialBird?.ringNumber || '');
+  const [name, setName] = useState(initialBird?.name || '');
   const [species, setSpecies] = useState(initialBird?.species || '');
   const [subspecies, setSubspecies] = useState(initialBird?.subspecies || '');
   const [gender, setGender] = useState<Gender>(initialBird?.gender || 'unknown');
@@ -43,6 +44,10 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
       newErrors.ringNumber = 'Ringnummer is verplicht';
     }
     
+    if (!name.trim()) {
+      newErrors.name = 'Naam is verplicht';
+    }
+    
     if (!species.trim()) {
       newErrors.species = 'Soort is verplicht';
     }
@@ -59,6 +64,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
       const birdData: Bird = {
         id: initialBird?.id || Date.now().toString(),
         ringNumber,
+        name,
         species,
         subspecies: subspecies || undefined,
         gender,
@@ -142,6 +148,20 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
         />
         {errors.ringNumber && (
           <Text style={styles.errorText}>{errors.ringNumber}</Text>
+        )}
+      </View>
+      
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Naam *</Text>
+        <TextInput
+          style={[styles.input, errors.name && styles.inputError]}
+          value={name}
+          onChangeText={setName}
+          placeholder="Voer naam in"
+          testID="input-name"
+        />
+        {errors.name && (
+          <Text style={styles.errorText}>{errors.name}</Text>
         )}
       </View>
       
