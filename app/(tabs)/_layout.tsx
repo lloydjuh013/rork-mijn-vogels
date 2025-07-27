@@ -13,13 +13,7 @@ export default function TabLayout() {
           backgroundColor: Colors.cardBackground,
           borderTopColor: Colors.border,
         },
-        headerStyle: {
-          backgroundColor: Colors.primary,
-        },
-        headerTintColor: Colors.cardBackground,
-        headerTitleStyle: {
-          fontWeight: "600",
-        },
+        headerShown: false,
       }}
     >
       <Tabs.Screen
