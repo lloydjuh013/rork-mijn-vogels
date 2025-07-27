@@ -3,8 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
 import { User } from '@/types/bird';
 
-const USER_STORAGE_KEY = 'mijn_vogels_user';
-const AUTH_TOKEN_KEY = 'mijn_vogels_auth_token';
+const USERS_STORAGE_KEY = 'mijn_vogels_users'; // Store all users
+const CURRENT_USER_EMAIL_KEY = 'mijn_vogels_current_user_email';
 
 type AuthState = {
   user: User | null;
@@ -23,47 +23,72 @@ type RegisterData = {
   name: string;
 };
 
-// Helper functions
-const getStoredUser = async (): Promise<User | null> => {
+// Helper functions for email-based storage
+const getAllUsers = async (): Promise<Record<string, User>> => {
   try {
-    const userData = await AsyncStorage.getItem(USER_STORAGE_KEY);
-    return userData ? JSON.parse(userData) : null;
+    const usersData = await AsyncStorage.getItem(USERS_STORAGE_KEY);
+    return usersData ? JSON.parse(usersData) : {};
   } catch (error) {
-    console.error('Error retrieving user:', error);
+    console.error('Error retrieving users:', error);
+    return {};
+  }
+};
+
+const getCurrentUserEmail = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem(CURRENT_USER_EMAIL_KEY);
+  } catch (error) {
+    console.error('Error retrieving current user email:', error);
     return null;
   }
 };
 
-const getAuthToken = async (): Promise<string | null> => {
+const getCurrentUser = async (): Promise<User | null> => {
   try {
-    return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+    const currentEmail = await getCurrentUserEmail();
+    if (!currentEmail) return null;
+    
+    const allUsers = await getAllUsers();
+    return allUsers[currentEmail] || null;
   } catch (error) {
-    console.error('Error retrieving auth token:', error);
+    console.error('Error retrieving current user:', error);
     return null;
   }
 };
 
 const storeUser = async (user: User): Promise<void> => {
   try {
-    await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    const allUsers = await getAllUsers();
+    allUsers[user.email] = user;
+    await AsyncStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(allUsers));
   } catch (error) {
     console.error('Error storing user:', error);
   }
 };
 
-const storeAuthToken = async (token: string): Promise<void> => {
+const setCurrentUser = async (email: string): Promise<void> => {
   try {
-    await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+    await AsyncStorage.setItem(CURRENT_USER_EMAIL_KEY, email);
   } catch (error) {
-    console.error('Error storing auth token:', error);
+    console.error('Error setting current user:', error);
   }
 };
 
-const clearAuthData = async (): Promise<void> => {
+const clearCurrentUser = async (): Promise<void> => {
   try {
-    await AsyncStorage.multiRemove([USER_STORAGE_KEY, AUTH_TOKEN_KEY]);
+    await AsyncStorage.removeItem(CURRENT_USER_EMAIL_KEY);
   } catch (error) {
-    console.error('Error clearing auth data:', error);
+    console.error('Error clearing current user:', error);
+  }
+};
+
+const getUserByEmail = async (email: string): Promise<User | null> => {
+  try {
+    const allUsers = await getAllUsers();
+    return allUsers[email] || null;
+  } catch (error) {
+    console.error('Error getting user by email:', error);
+    return null;
   }
 };
 
@@ -79,17 +104,17 @@ const generateUserId = (): string => {
 export const [AuthProvider, useAuth] = createContextHook(() => {
   const queryClient = useQueryClient();
 
-  // User query
+  // Current user query
   const userQuery = useQuery({
-    queryKey: ['user'],
-    queryFn: getStoredUser,
-    staleTime: Infinity, // User data doesn't change often
+    queryKey: ['currentUser'],
+    queryFn: getCurrentUser,
+    staleTime: Infinity,
   });
 
-  // Auth token query
-  const tokenQuery = useQuery({
-    queryKey: ['authToken'],
-    queryFn: getAuthToken,
+  // Current user email query
+  const currentEmailQuery = useQuery({
+    queryKey: ['currentUserEmail'],
+    queryFn: getCurrentUserEmail,
     staleTime: Infinity,
   });
 
@@ -99,14 +124,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log('Starting registration for:', data.email);
       
       // Check if user already exists
-      const existingUser = await getStoredUser();
-      if (existingUser && existingUser.email === data.email) {
+      const existingUser = await getUserByEmail(data.email);
+      if (existingUser) {
         throw new Error('Er bestaat al een account met dit e-mailadres');
       }
       
-      // Simulate API call - in real app, this would call your backend
       const now = new Date();
-      
       const user: User = {
         id: generateUserId(),
         email: data.email,
@@ -117,9 +140,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       console.log('Created user:', user);
 
-      // Store user and token
+      // Store user and set as current
       await storeUser(user);
-      await storeAuthToken(user.id); // Using user ID as token for simplicity
+      await setCurrentUser(user.email);
       
       console.log('User stored successfully');
       
@@ -127,11 +150,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     },
     onSuccess: (user) => {
       console.log('Registration successful, updating queries');
-      queryClient.setQueryData(['user'], user);
-      queryClient.setQueryData(['authToken'], user.id);
-      // Force refetch to ensure UI updates
-      queryClient.invalidateQueries({ queryKey: ['user'] });
-      queryClient.invalidateQueries({ queryKey: ['authToken'] });
+      queryClient.setQueryData(['currentUser'], user);
+      queryClient.setQueryData(['currentUserEmail'], user.email);
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUserEmail'] });
     },
     onError: (error) => {
       console.error('Registration failed:', error);
@@ -141,32 +163,41 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData): Promise<User> => {
-      // Simulate API call - in real app, this would validate credentials
-      const storedUser = await getStoredUser();
+      console.log('Starting login for:', data.email);
       
-      if (!storedUser || storedUser.email !== data.email) {
-        throw new Error('Ongeldige inloggegevens');
+      const user = await getUserByEmail(data.email);
+      if (!user) {
+        throw new Error('Geen account gevonden met dit e-mailadres');
       }
       
       // In real app, you'd validate password hash here
-      await storeAuthToken(storedUser.id);
+      await setCurrentUser(user.email);
       
-      return storedUser;
+      console.log('Login successful for:', user.email);
+      return user;
     },
     onSuccess: (user) => {
-      queryClient.setQueryData(['user'], user);
-      queryClient.setQueryData(['authToken'], user.id);
+      console.log('Login successful, updating queries');
+      queryClient.setQueryData(['currentUser'], user);
+      queryClient.setQueryData(['currentUserEmail'], user.email);
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUserEmail'] });
+    },
+    onError: (error) => {
+      console.error('Login failed:', error);
     },
   });
 
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async (): Promise<void> => {
-      await clearAuthData();
+      console.log('Logging out user');
+      await clearCurrentUser();
     },
     onSuccess: () => {
-      queryClient.setQueryData(['user'], null);
-      queryClient.setQueryData(['authToken'], null);
+      console.log('Logout successful, clearing queries');
+      queryClient.setQueryData(['currentUser'], null);
+      queryClient.setQueryData(['currentUserEmail'], null);
       // Clear all other cached data
       queryClient.clear();
     },
@@ -176,15 +207,15 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   // Computed values
   const user = userQuery.data;
-  const token = tokenQuery.data;
-  const isLoading = userQuery.isLoading || tokenQuery.isLoading;
-  // User is authenticated ONLY if both user and token exist and match
-  const isAuthenticated = !!(user && token && user.id === token);
+  const currentEmail = currentEmailQuery.data;
+  const isLoading = userQuery.isLoading || currentEmailQuery.isLoading;
+  // User is authenticated if both user and current email exist and match
+  const isAuthenticated = !!(user && currentEmail && user.email === currentEmail);
   
   console.log('Auth Debug:', { 
     hasUser: !!user, 
-    hasToken: !!token, 
-    tokensMatch: user?.id === token,
+    hasCurrentEmail: !!currentEmail, 
+    emailsMatch: user?.email === currentEmail,
     isAuthenticated,
     isLoading 
   });

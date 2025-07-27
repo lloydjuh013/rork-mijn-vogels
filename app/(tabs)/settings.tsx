@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, Switch, ScrollView, Alert, TouchableOpacity, Share, Platform, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
-import { HelpCircle, Trash2, Download, Upload, Bell, TreePine, Mail, Globe } from 'lucide-react-native';
+import { HelpCircle, Trash2, Download, Upload, Bell, TreePine, Mail, Globe, LogOut } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import Colors from '@/constants/colors';
 import Button from '@/components/Button';
 import { useBirdStore } from '@/hooks/bird-store';
@@ -10,8 +11,9 @@ import { useAuth } from '@/hooks/auth-store';
 
 export default function SettingsScreen() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { birds, couples, aviaries, nests } = useBirdStore();
-  const { user } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [isResetting, setIsResetting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -55,8 +57,98 @@ export default function SettingsScreen() {
     setIsExporting(true);
     try {
       // Create comprehensive backup data
+      const exportDate = new Date();
+      const dateString = exportDate.toLocaleDateString('nl-NL');
+      const timeString = exportDate.toLocaleTimeString('nl-NL');
+      
+      // Create readable text format
+      let textContent = `MYBIRD DATA EXPORT\n`;
+      textContent += `===================\n\n`;
+      textContent += `Export Datum: ${dateString} ${timeString}\n`;
+      textContent += `App Versie: 1.0.0\n`;
+      textContent += `Gebruiker: ${user?.name} (${user?.email})\n\n`;
+      
+      // Statistics
+      textContent += `STATISTIEKEN\n`;
+      textContent += `------------\n`;
+      textContent += `Totaal Vogels: ${birds.length}\n`;
+      textContent += `Actieve Vogels: ${birds.filter(b => b.status === 'active').length}\n`;
+      textContent += `Totaal Koppels: ${couples.length}\n`;
+      textContent += `Actieve Koppels: ${couples.filter(c => c.active).length}\n`;
+      textContent += `Totaal Kooien: ${aviaries.length}\n`;
+      textContent += `Totaal Nesten: ${nests.length}\n\n`;
+      
+      // Birds data
+      if (birds.length > 0) {
+        textContent += `VOGELS (${birds.length})\n`;
+        textContent += `=======\n`;
+        birds.forEach((bird, index) => {
+          textContent += `${index + 1}. ${bird.name || 'Naamloos'}\n`;
+          textContent += `   Ring: ${bird.ringNumber}\n`;
+          textContent += `   Soort: ${bird.species}\n`;
+          if (bird.subspecies) textContent += `   Ondersoort: ${bird.subspecies}\n`;
+          textContent += `   Geslacht: ${bird.gender === 'male' ? 'Man' : bird.gender === 'female' ? 'Vrouw' : 'Onbekend'}\n`;
+          if (bird.colorMutation) textContent += `   Kleurmutatie: ${bird.colorMutation}\n`;
+          textContent += `   Geboortedatum: ${new Date(bird.birthDate).toLocaleDateString('nl-NL')}\n`;
+          textContent += `   Herkomst: ${bird.origin === 'purchased' ? 'Gekocht' : bird.origin === 'bred' ? 'Gefokt' : 'Gered'}\n`;
+          textContent += `   Status: ${bird.status === 'active' ? 'Actief' : bird.status === 'sold' ? 'Verkocht' : bird.status === 'deceased' ? 'Overleden' : 'Onbekend'}\n`;
+          if (bird.aviaryId) textContent += `   Kooi ID: ${bird.aviaryId}\n`;
+          textContent += `\n`;
+        });
+      }
+      
+      // Couples data
+      if (couples.length > 0) {
+        textContent += `KOPPELS (${couples.length})\n`;
+        textContent += `========\n`;
+        couples.forEach((couple, index) => {
+          const maleBird = birds.find(b => b.id === couple.maleBirdId);
+          const femaleBird = birds.find(b => b.id === couple.femaleBirdId);
+          textContent += `${index + 1}. Koppel\n`;
+          textContent += `   Man: ${maleBird?.name || 'Onbekend'} (${maleBird?.ringNumber || 'Geen ring'})\n`;
+          textContent += `   Vrouw: ${femaleBird?.name || 'Onbekend'} (${femaleBird?.ringNumber || 'Geen ring'})\n`;
+          textContent += `   Gekoppeld op: ${new Date(couple.pairedDate).toLocaleDateString('nl-NL')}\n`;
+          textContent += `   Actief: ${couple.active ? 'Ja' : 'Nee'}\n`;
+          if (couple.notes) textContent += `   Notities: ${couple.notes}\n`;
+          textContent += `\n`;
+        });
+      }
+      
+      // Aviaries data
+      if (aviaries.length > 0) {
+        textContent += `KOOIEN (${aviaries.length})\n`;
+        textContent += `=======\n`;
+        aviaries.forEach((aviary, index) => {
+          const aviaryBirds = birds.filter(b => b.aviaryId === aviary.id);
+          textContent += `${index + 1}. ${aviary.name}\n`;
+          textContent += `   Type: ${aviary.type}\n`;
+          textContent += `   Locatie: ${aviary.location}\n`;
+          textContent += `   Afmetingen: ${aviary.dimensions}\n`;
+          textContent += `   Vogels: ${aviaryBirds.length}\n`;
+          if (aviary.notes) textContent += `   Notities: ${aviary.notes}\n`;
+          textContent += `\n`;
+        });
+      }
+      
+      // Nests data
+      if (nests.length > 0) {
+        textContent += `NESTEN (${nests.length})\n`;
+        textContent += `=======\n`;
+        nests.forEach((nest, index) => {
+          const couple = couples.find(c => c.id === nest.coupleId);
+          textContent += `${index + 1}. Nest\n`;
+          textContent += `   Koppel ID: ${nest.coupleId}\n`;
+          textContent += `   Start datum: ${new Date(nest.startDate).toLocaleDateString('nl-NL')}\n`;
+          if (nest.endDate) textContent += `   Eind datum: ${new Date(nest.endDate).toLocaleDateString('nl-NL')}\n`;
+          textContent += `   Actief: ${nest.active ? 'Ja' : 'Nee'}\n`;
+          if (nest.notes) textContent += `   Notities: ${nest.notes}\n`;
+          textContent += `\n`;
+        });
+      }
+      
+      // Add JSON data at the end for technical backup
       const backupData = {
-        exportDate: new Date().toISOString(),
+        exportDate: exportDate.toISOString(),
         appVersion: '1.0.0',
         user: {
           id: user?.id,
@@ -69,23 +161,17 @@ export default function SettingsScreen() {
           couples: couples,
           aviaries: aviaries,
           nests: nests
-        },
-        statistics: {
-          totalBirds: birds.length,
-          totalCouples: couples.length,
-          totalAviaries: aviaries.length,
-          totalNests: nests.length,
-          activeBirds: birds.filter(b => b.status === 'active').length,
-          activeCouples: couples.filter(c => c.active).length
         }
       };
-
-      const jsonString = JSON.stringify(backupData, null, 2);
-      const fileName = `MyBird_Backup_${new Date().toISOString().split('T')[0]}.json`;
+      
+      textContent += `\n\n=== TECHNISCHE DATA (JSON) ===\n`;
+      textContent += JSON.stringify(backupData, null, 2);
+      
+      const fileName = `MyBird_Export_${exportDate.toISOString().split('T')[0]}.txt`;
       
       if (Platform.OS === 'web') {
-        // Web: Download as file
-        const blob = new Blob([jsonString], { type: 'application/json' });
+        // Web: Download as .txt file
+        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -94,12 +180,12 @@ export default function SettingsScreen() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        Alert.alert('Gelukt', 'Backup bestand is gedownload.');
+        Alert.alert('Gelukt', 'Export bestand (.txt) is gedownload.');
       } else {
         // Mobile: Share the data
         await Share.share({
-          message: `MyBird Data Backup\n\nGebruiker: ${user?.name}\nExport Datum: ${new Date().toLocaleDateString('nl-NL')}\n\nData:\n${jsonString}`,
-          title: 'MyBird Data Backup'
+          message: textContent,
+          title: 'MyBird Data Export'
         });
       }
     } catch (error) {
@@ -113,7 +199,7 @@ export default function SettingsScreen() {
   const importData = () => {
     Alert.alert(
       'Gegevens Importeren',
-      'Voor het importeren van gegevens, neem contact op met info@mybird.app. Stuur je backup bestand mee en wij helpen je bij het herstellen van je gegevens.',
+      'Voor het importeren van gegevens, neem contact op met info@mybird.app. Stuur je export bestand (.txt) mee en wij helpen je bij het herstellen van je gegevens.',
       [
         { text: 'Annuleren', style: 'cancel' },
         { 
@@ -121,7 +207,7 @@ export default function SettingsScreen() {
           onPress: () => {
             const email = 'info@mybird.app';
             const subject = 'MyBird Data Import Verzoek';
-            const body = `Hallo,\n\nIk wil graag mijn MyBird gegevens importeren.\n\nGebruiker: ${user?.name}\nEmail: ${user?.email}\n\nIk heb mijn backup bestand bijgevoegd.\n\nMet vriendelijke groet`;
+            const body = `Hallo,\n\nIk wil graag mijn MyBird gegevens importeren.\n\nGebruiker: ${user?.name}\nEmail: ${user?.email}\n\nIk heb mijn export bestand (.txt) bijgevoegd.\n\nMet vriendelijke groet`;
             const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
             Linking.openURL(mailtoUrl).catch(() => {
               Alert.alert('Fout', 'Kon email app niet openen. Stuur handmatig een email naar info@mybird.app');
@@ -131,9 +217,40 @@ export default function SettingsScreen() {
       ]
     );
   };
+  
+  const handleLogout = () => {
+    Alert.alert(
+      'Uitloggen',
+      'Weet je zeker dat je wilt uitloggen?',
+      [
+        { text: 'Annuleren', style: 'cancel' },
+        { 
+          text: 'Uitloggen', 
+          style: 'destructive',
+          onPress: () => {
+            logout();
+            router.replace('/auth/register');
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <ScrollView style={styles.container}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Account</Text>
+        
+        <Button
+          title="Uitloggen"
+          onPress={handleLogout}
+          type="danger"
+          icon={<LogOut size={20} color={Colors.cardBackground} />}
+          loading={isLoggingOut}
+          testID="logout-button"
+        />
+      </View>
+      
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Voorkeuren</Text>
         
@@ -213,22 +330,23 @@ export default function SettingsScreen() {
           
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Data Locatie</Text>
-            <Text style={styles.infoValue}>Lokaal Apparaat (AsyncStorage)</Text>
+            <Text style={styles.infoValue}>Per Email Account (AsyncStorage)</Text>
           </View>
         </View>
         
         <View style={styles.dataLocationInfo}>
           <Text style={styles.dataLocationTitle}>📍 Waar worden mijn gegevens opgeslagen?</Text>
           <Text style={styles.dataLocationText}>
-            Je gegevens worden lokaal op je apparaat opgeslagen in AsyncStorage. Dit betekent:
+            Je gegevens worden lokaal op je apparaat opgeslagen per email account. Dit betekent:
           </Text>
           <Text style={styles.dataLocationBullet}>• Gegevens blijven privé op jouw apparaat</Text>
-          <Text style={styles.dataLocationBullet}>• Geen cloud synchronisatie</Text>
+          <Text style={styles.dataLocationBullet}>• Meerdere accounts mogelijk op hetzelfde apparaat</Text>
+          <Text style={styles.dataLocationBullet}>• Geen cloud synchronisatie tussen apparaten</Text>
           <Text style={styles.dataLocationBullet}>• Bij app verwijdering gaan gegevens verloren</Text>
-          <Text style={styles.dataLocationBullet}>• Maak regelmatig een backup via &apos;Gegevens Exporteren&apos;</Text>
+          <Text style={styles.dataLocationBullet}>• Maak regelmatig een export via &apos;Gegevens Exporteren&apos;</Text>
           
           <Text style={styles.dataLocationRestore}>
-            💡 Gegevens kwijt? Stuur je backup bestand naar info@mybird.app voor herstel.
+            💡 Gegevens kwijt? Stuur je export bestand (.txt) naar info@mybird.app voor herstel.
           </Text>
         </View>
         

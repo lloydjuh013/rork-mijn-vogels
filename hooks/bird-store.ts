@@ -3,145 +3,163 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect } from 'react';
 import { Bird, HealthRecord, Couple, Nest, Egg, Aviary, User } from '@/types/bird';
+import { useAuth } from '@/hooks/auth-store';
 
-// Storage keys
-const BIRDS_STORAGE_KEY = 'mijn_vogels_birds';
-const HEALTH_RECORDS_STORAGE_KEY = 'mijn_vogels_health_records';
-const COUPLES_STORAGE_KEY = 'mijn_vogels_couples';
-const NESTS_STORAGE_KEY = 'mijn_vogels_nests';
-const EGGS_STORAGE_KEY = 'mijn_vogels_eggs';
-const AVIARIES_STORAGE_KEY = 'mijn_vogels_aviaries';
-const USER_STORAGE_KEY = 'mijn_vogels_user';
-const AUTH_TOKEN_KEY = 'mijn_vogels_auth_token';
+// Storage keys - now email-based
+const getStorageKey = (email: string, type: string) => `mijn_vogels_${email}_${type}`;
 
-// Helper functions for storage
-const getStoredData = async <T>(key: string): Promise<T[]> => {
+// Helper functions for email-based storage
+const getStoredData = async <T>(email: string, type: string): Promise<T[]> => {
   try {
+    const key = getStorageKey(email, type);
     const data = await AsyncStorage.getItem(key);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error(`Error retrieving ${key}:`, error);
+    console.error(`Error retrieving ${type} for ${email}:`, error);
     return [];
   }
 };
 
-const storeData = async <T>(key: string, data: T[]): Promise<void> => {
+const storeData = async <T>(email: string, type: string, data: T[]): Promise<void> => {
   try {
+    const key = getStorageKey(email, type);
     await AsyncStorage.setItem(key, JSON.stringify(data));
   } catch (error) {
-    console.error(`Error storing ${key}:`, error);
+    console.error(`Error storing ${type} for ${email}:`, error);
   }
 };
 
 // Create the context hook
 export const [BirdStoreProvider, useBirdStore] = createContextHook(() => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  // Don't load data if no user is authenticated
+  const userEmail = user?.email;
 
   // Birds
   const birdsQuery = useQuery({
-    queryKey: ['birds'],
+    queryKey: ['birds', userEmail],
     queryFn: async () => {
-      return getStoredData<Bird>(BIRDS_STORAGE_KEY);
-    }
+      if (!userEmail) return [];
+      return getStoredData<Bird>(userEmail, 'birds');
+    },
+    enabled: !!userEmail
   });
 
   const saveBirdsMutation = useMutation({
     mutationFn: async (birds: Bird[]) => {
-      await storeData(BIRDS_STORAGE_KEY, birds);
+      if (!userEmail) throw new Error('No user authenticated');
+      await storeData(userEmail, 'birds', birds);
       return birds;
     },
     onSuccess: (birds) => {
-      queryClient.setQueryData(['birds'], birds);
+      queryClient.setQueryData(['birds', userEmail], birds);
     }
   });
 
   // Health Records
   const healthRecordsQuery = useQuery({
-    queryKey: ['healthRecords'],
+    queryKey: ['healthRecords', userEmail],
     queryFn: async () => {
-      return getStoredData<HealthRecord>(HEALTH_RECORDS_STORAGE_KEY);
-    }
+      if (!userEmail) return [];
+      return getStoredData<HealthRecord>(userEmail, 'health_records');
+    },
+    enabled: !!userEmail
   });
 
   const saveHealthRecordsMutation = useMutation({
     mutationFn: async (records: HealthRecord[]) => {
-      await storeData(HEALTH_RECORDS_STORAGE_KEY, records);
+      if (!userEmail) throw new Error('No user authenticated');
+      await storeData(userEmail, 'health_records', records);
       return records;
     },
     onSuccess: (records) => {
-      queryClient.setQueryData(['healthRecords'], records);
+      queryClient.setQueryData(['healthRecords', userEmail], records);
     }
   });
 
   // Couples
   const couplesQuery = useQuery({
-    queryKey: ['couples'],
+    queryKey: ['couples', userEmail],
     queryFn: async () => {
-      return getStoredData<Couple>(COUPLES_STORAGE_KEY);
-    }
+      if (!userEmail) return [];
+      return getStoredData<Couple>(userEmail, 'couples');
+    },
+    enabled: !!userEmail
   });
 
   const saveCouplesMutation = useMutation({
     mutationFn: async (couples: Couple[]) => {
-      await storeData(COUPLES_STORAGE_KEY, couples);
+      if (!userEmail) throw new Error('No user authenticated');
+      await storeData(userEmail, 'couples', couples);
       return couples;
     },
     onSuccess: (couples) => {
-      queryClient.setQueryData(['couples'], couples);
+      queryClient.setQueryData(['couples', userEmail], couples);
     }
   });
 
   // Nests
   const nestsQuery = useQuery({
-    queryKey: ['nests'],
+    queryKey: ['nests', userEmail],
     queryFn: async () => {
-      return getStoredData<Nest>(NESTS_STORAGE_KEY);
-    }
+      if (!userEmail) return [];
+      return getStoredData<Nest>(userEmail, 'nests');
+    },
+    enabled: !!userEmail
   });
 
   const saveNestsMutation = useMutation({
     mutationFn: async (nests: Nest[]) => {
-      await storeData(NESTS_STORAGE_KEY, nests);
+      if (!userEmail) throw new Error('No user authenticated');
+      await storeData(userEmail, 'nests', nests);
       return nests;
     },
     onSuccess: (nests) => {
-      queryClient.setQueryData(['nests'], nests);
+      queryClient.setQueryData(['nests', userEmail], nests);
     }
   });
 
   // Eggs
   const eggsQuery = useQuery({
-    queryKey: ['eggs'],
+    queryKey: ['eggs', userEmail],
     queryFn: async () => {
-      return getStoredData<Egg>(EGGS_STORAGE_KEY);
-    }
+      if (!userEmail) return [];
+      return getStoredData<Egg>(userEmail, 'eggs');
+    },
+    enabled: !!userEmail
   });
 
   const saveEggsMutation = useMutation({
     mutationFn: async (eggs: Egg[]) => {
-      await storeData(EGGS_STORAGE_KEY, eggs);
+      if (!userEmail) throw new Error('No user authenticated');
+      await storeData(userEmail, 'eggs', eggs);
       return eggs;
     },
     onSuccess: (eggs) => {
-      queryClient.setQueryData(['eggs'], eggs);
+      queryClient.setQueryData(['eggs', userEmail], eggs);
     }
   });
 
   // Aviaries
   const aviariesQuery = useQuery({
-    queryKey: ['aviaries'],
+    queryKey: ['aviaries', userEmail],
     queryFn: async () => {
-      return getStoredData<Aviary>(AVIARIES_STORAGE_KEY);
-    }
+      if (!userEmail) return [];
+      return getStoredData<Aviary>(userEmail, 'aviaries');
+    },
+    enabled: !!userEmail
   });
 
   const saveAviariesMutation = useMutation({
     mutationFn: async (aviaries: Aviary[]) => {
-      await storeData(AVIARIES_STORAGE_KEY, aviaries);
+      if (!userEmail) throw new Error('No user authenticated');
+      await storeData(userEmail, 'aviaries', aviaries);
       return aviaries;
     },
     onSuccess: (aviaries) => {
-      queryClient.setQueryData(['aviaries'], aviaries);
+      queryClient.setQueryData(['aviaries', userEmail], aviaries);
     }
   });
 
