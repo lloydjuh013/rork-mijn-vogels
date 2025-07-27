@@ -70,6 +70,19 @@ export default function BirdDetailScreen() {
     }
   };
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'Actief';
+      case 'deceased':
+        return 'Overleden';
+      case 'sold':
+        return 'Verkocht';
+      default:
+        return status;
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: bird.name || bird.ringNumber }} />
@@ -96,7 +109,7 @@ export default function BirdDetailScreen() {
           <View style={[styles.statusBadge, { 
             backgroundColor: bird.status === 'active' ? Colors.success : Colors.textLighter 
           }]}>
-            <Text style={styles.statusText}>{bird.status}</Text>
+            <Text style={styles.statusText}>{getStatusText(bird.status)}</Text>
           </View>
         </View>
         

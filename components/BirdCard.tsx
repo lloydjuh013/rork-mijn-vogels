@@ -32,6 +32,19 @@ const BirdCard: React.FC<BirdCardProps> = ({ bird }) => {
     return d.toLocaleDateString();
   };
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'Actief';
+      case 'deceased':
+        return 'Overleden';
+      case 'sold':
+        return 'Verkocht';
+      default:
+        return status;
+    }
+  };
+
   return (
     <TouchableOpacity 
       style={styles.container} 
@@ -42,7 +55,7 @@ const BirdCard: React.FC<BirdCardProps> = ({ bird }) => {
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.ringNumber}>{bird.ringNumber}</Text>
-          <Text style={styles.status}>{bird.status}</Text>
+          <Text style={styles.status}>{getStatusText(bird.status)}</Text>
         </View>
         
         <Text style={styles.species}>{bird.species}</Text>
@@ -62,7 +75,7 @@ const BirdCard: React.FC<BirdCardProps> = ({ bird }) => {
         {bird.aviaryId && (
           <View style={styles.infoRow}>
             <MapPin size={16} color={Colors.textLight} />
-            <Text style={styles.infoText}>Aviary ID: {bird.aviaryId}</Text>
+            <Text style={styles.infoText}>Kooi ID: {bird.aviaryId}</Text>
           </View>
         )}
       </View>
