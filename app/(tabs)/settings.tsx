@@ -224,9 +224,9 @@ export default function SettingsScreen() {
         { 
           text: 'Uitloggen', 
           style: 'destructive',
-          onPress: async () => {
+          onPress: () => {
             try {
-              await logout();
+              logout();
               // Navigation will be handled by the auth state change in _layout.tsx
             } catch (error) {
               console.error('Logout error:', error);

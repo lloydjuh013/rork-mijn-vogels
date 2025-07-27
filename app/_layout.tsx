@@ -18,18 +18,16 @@ function RootLayoutNav() {
 
   // Redirect to registration if not authenticated after loading
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace('/auth/register');
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        console.log('User not authenticated, redirecting to register');
+        router.replace('/auth/register');
+      } else {
+        console.log('User authenticated, redirecting to tabs');
+        router.replace('/(tabs)');
+      }
     }
   }, [isLoading, isAuthenticated, router]);
-
-  // Handle logout redirect
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      // Clear any existing navigation state
-      router.replace('/auth/register');
-    }
-  }, [isAuthenticated, isLoading, router]);
 
   if (isLoading) {
     return null; // Show nothing while checking auth
@@ -46,34 +44,24 @@ function RootLayoutNav() {
         fontWeight: "600",
       },
     }}>
-      {isAuthenticated ? (
-        // Authenticated routes
-        <>
-          <Stack.Screen 
-            name="(tabs)" 
-            options={{ 
-              headerShown: false
-            }} 
-          />
-          <Stack.Screen name="birds/[id]" options={{ title: "Vogeldetails" }} />
-          <Stack.Screen name="birds/add" options={{ title: "Vogel Toevoegen" }} />
-          <Stack.Screen name="birds/edit/[id]" options={{ title: "Vogel Bewerken" }} />
-          <Stack.Screen name="couples/[id]" options={{ title: "Koppeldetails" }} />
-          <Stack.Screen name="couples/add" options={{ title: "Koppel Toevoegen" }} />
-          <Stack.Screen name="nests/index" options={{ title: "Actieve Nesten" }} />
-          <Stack.Screen name="nests/[id]" options={{ title: "Nestdetails" }} />
-          <Stack.Screen name="nests/add" options={{ title: "Nest Toevoegen" }} />
-          <Stack.Screen name="aviaries/[id]" options={{ title: "Kooi Details" }} />
-          <Stack.Screen name="aviaries/add" options={{ title: "Kooi Toevoegen" }} />
-        </>
-      ) : (
-        // Authentication routes - FORCE registration first
-        <>
-          <Stack.Screen name="auth/register" options={{ title: "Registreren", headerShown: false }} />
-          <Stack.Screen name="auth/login" options={{ title: "Inloggen", headerShown: false }} />
-          {/* Block all other routes when not authenticated */}
-        </>
-      )}
+      <Stack.Screen 
+        name="(tabs)" 
+        options={{ 
+          headerShown: false
+        }} 
+      />
+      <Stack.Screen name="birds/[id]" options={{ title: "Vogeldetails" }} />
+      <Stack.Screen name="birds/add" options={{ title: "Vogel Toevoegen" }} />
+      <Stack.Screen name="birds/edit/[id]" options={{ title: "Vogel Bewerken" }} />
+      <Stack.Screen name="couples/[id]" options={{ title: "Koppeldetails" }} />
+      <Stack.Screen name="couples/add" options={{ title: "Koppel Toevoegen" }} />
+      <Stack.Screen name="nests/index" options={{ title: "Actieve Nesten" }} />
+      <Stack.Screen name="nests/[id]" options={{ title: "Nestdetails" }} />
+      <Stack.Screen name="nests/add" options={{ title: "Nest Toevoegen" }} />
+      <Stack.Screen name="aviaries/[id]" options={{ title: "Kooi Details" }} />
+      <Stack.Screen name="aviaries/add" options={{ title: "Kooi Toevoegen" }} />
+      <Stack.Screen name="auth/register" options={{ title: "Registreren", headerShown: false }} />
+      <Stack.Screen name="auth/login" options={{ title: "Inloggen", headerShown: false }} />
     </Stack>
   );
 }

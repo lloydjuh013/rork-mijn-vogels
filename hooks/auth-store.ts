@@ -183,19 +183,26 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log('All users data:', allUsers);
       console.log('Looking for email:', normalizedEmail);
       
-      const user = await getUserByEmail(normalizedEmail);
-      console.log('Found user:', user);
+      // Try to find user with exact email match
+      let user = await getUserByEmail(normalizedEmail);
+      console.log('Found user with exact match:', user);
+      
+      // If not found, try to find with case-insensitive search
+      if (!user) {
+        const allUserEmails = Object.keys(allUsers);
+        const matchingEmail = allUserEmails.find(email => 
+          email.toLowerCase() === normalizedEmail.toLowerCase()
+        );
+        
+        if (matchingEmail) {
+          user = allUsers[matchingEmail];
+          console.log('Found user with case-insensitive match:', user);
+        }
+      }
       
       if (!user) {
         console.log('No user found with email:', normalizedEmail);
         console.log('Available emails:', Object.keys(allUsers));
-        
-        // Check if there's a user with similar email (case mismatch)
-        const similarEmails = Object.keys(allUsers).filter(email => 
-          email.toLowerCase() === normalizedEmail
-        );
-        console.log('Similar emails found:', similarEmails);
-        
         throw new Error('Geen account gevonden met dit e-mailadres');
       }
       
