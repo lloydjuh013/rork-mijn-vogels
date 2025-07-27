@@ -123,8 +123,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     mutationFn: async (data: RegisterData): Promise<User> => {
       console.log('Starting registration for:', data.email);
       
+      // Normalize email to lowercase
+      const normalizedEmail = data.email.trim().toLowerCase();
+      console.log('Normalized email:', normalizedEmail);
+      
       // Check if user already exists
-      const existingUser = await getUserByEmail(data.email);
+      const existingUser = await getUserByEmail(normalizedEmail);
       if (existingUser) {
         throw new Error('Er bestaat al een account met dit e-mailadres');
       }
@@ -132,7 +136,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       const now = new Date();
       const user: User = {
         id: generateUserId(),
-        email: data.email,
+        email: normalizedEmail, // Use normalized email
         name: data.name,
         createdAt: now,
         isActive: true,
@@ -145,6 +149,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       await setCurrentUser(user.email);
       
       console.log('User stored successfully');
+      
+      // Verify storage
+      const allUsers = await getAllUsers();
+      console.log('All users after registration:', Object.keys(allUsers));
       
       return user;
     },
@@ -165,8 +173,21 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     mutationFn: async (data: LoginData): Promise<User> => {
       console.log('Starting login for:', data.email);
       
-      const user = await getUserByEmail(data.email);
+      // Normalize email to lowercase (same as registration)
+      const normalizedEmail = data.email.trim().toLowerCase();
+      console.log('Normalized email for login:', normalizedEmail);
+      
+      // Debug: Check all stored users
+      const allUsers = await getAllUsers();
+      console.log('All stored users:', Object.keys(allUsers));
+      console.log('Looking for email:', normalizedEmail);
+      
+      const user = await getUserByEmail(normalizedEmail);
+      console.log('Found user:', user);
+      
       if (!user) {
+        console.log('No user found with email:', normalizedEmail);
+        console.log('Available emails:', Object.keys(allUsers));
         throw new Error('Geen account gevonden met dit e-mailadres');
       }
       
