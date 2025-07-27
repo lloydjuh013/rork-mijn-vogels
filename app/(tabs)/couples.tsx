@@ -18,7 +18,7 @@ export default function CouplesScreen() {
     return activeFilter === null ? true : couple.active === activeFilter;
   });
 
-  const renderCoupleItem = ({ item }: { item: Couple }) => {
+  const renderCoupleItem = ({ item, index }: { item: Couple; index: number }) => {
     const male = getBirdById(item.maleId);
     const female = getBirdById(item.femaleId);
     
@@ -32,7 +32,7 @@ export default function CouplesScreen() {
         
         <View style={styles.coupleContent}>
           <View style={styles.coupleHeader}>
-            <Text style={styles.coupleId}>Koppel #{item.id.slice(0, 8)}</Text>
+            <Text style={styles.coupleId}>Koppel #{index + 1}</Text>
             <Text style={styles.season}>{item.season}</Text>
           </View>
           

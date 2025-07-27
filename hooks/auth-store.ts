@@ -240,6 +240,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       queryClient.invalidateQueries({ queryKey: ['currentUserEmail'] });
     },
+    onError: (error) => {
+      console.error('Logout failed:', error);
+    },
   });
 
 
