@@ -229,16 +229,19 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     mutationFn: async (): Promise<void> => {
       console.log('Logging out user');
       await clearCurrentUser();
+      console.log('Current user cleared from storage');
     },
     onSuccess: () => {
       console.log('Logout successful, clearing queries');
+      // Set queries to null to trigger immediate state change
       queryClient.setQueryData(['currentUser'], null);
       queryClient.setQueryData(['currentUserEmail'], null);
-      // Clear all other cached data
+      // Clear all cached data
       queryClient.clear();
-      // Invalidate queries to trigger re-fetch
+      // Force refetch of auth queries
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       queryClient.invalidateQueries({ queryKey: ['currentUserEmail'] });
+      console.log('All queries cleared and invalidated');
     },
     onError: (error) => {
       console.error('Logout failed:', error);
