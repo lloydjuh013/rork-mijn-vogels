@@ -195,6 +195,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   // Computed values
   const user = userQuery.data;
   const token = tokenQuery.data;
+  const isLoading = userQuery.isLoading || tokenQuery.isLoading;
   // User is authenticated ONLY if both user and token exist and match
   const isAuthenticated = !!(user && token && user.id === token);
   
@@ -205,7 +206,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     isAuthenticated,
     isLoading 
   });
-  const isLoading = userQuery.isLoading || tokenQuery.isLoading;
   
   const subscriptionStatus = user ? getSubscriptionStatus(user) : 'expired';
   const daysLeftInTrial = user ? calculateDaysLeft(user.trialEndsAt) : 0;
