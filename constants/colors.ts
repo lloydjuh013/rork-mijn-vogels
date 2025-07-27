@@ -12,8 +12,8 @@ const Colors = {
   warning: "#F0AD4E", // Warning yellow
   danger: "#D9534F", // Danger red
   info: "#5BC0DE", // Info blue
-  male: "#007AFF", // Blue for male
-  female: "#FF69B4", // Pink for female
+  male: "#007AFF", // Blue for male (correct)
+  female: "#FF69B4", // Pink for female (correct)
   unknown: "#F0AD4E", // Yellow for unknown gender
 };
 

@@ -40,11 +40,11 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
     const newErrors: Record<string, string> = {};
     
     if (!ringNumber.trim()) {
-      newErrors.ringNumber = 'Ring number is required';
+      newErrors.ringNumber = 'Ringnummer is verplicht';
     }
     
     if (!species.trim()) {
-      newErrors.species = 'Species is required';
+      newErrors.species = 'Soort is verplicht';
     }
     
     setErrors(newErrors);
@@ -76,7 +76,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
       onSubmit(birdData);
     } catch (error) {
       console.error('Error submitting bird form:', error);
-      Alert.alert('Error', 'Failed to save bird data. Please try again.');
+      Alert.alert('Fout', 'Kon vogelgegevens niet opslaan. Probeer opnieuw.');
     } finally {
       setIsSubmitting(false);
     }
@@ -86,7 +86,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please grant camera roll permissions to upload an image.');
+      Alert.alert('Toestemming Vereist', 'Geef toegang tot fotobibliotheek om een afbeelding te uploaden.');
       return;
     }
     
@@ -106,7 +106,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please grant camera permissions to take a photo.');
+      Alert.alert('Toestemming Vereist', 'Geef cameratoegang om een foto te maken.');
       return;
     }
     
@@ -132,12 +132,12 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Ring Number *</Text>
+        <Text style={styles.label}>Ringnummer *</Text>
         <TextInput
           style={[styles.input, errors.ringNumber && styles.inputError]}
           value={ringNumber}
           onChangeText={setRingNumber}
-          placeholder="Enter ring number"
+          placeholder="Voer ringnummer in"
           testID="input-ring-number"
         />
         {errors.ringNumber && (
@@ -146,12 +146,12 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
       </View>
       
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Species *</Text>
+        <Text style={styles.label}>Soort *</Text>
         <TextInput
           style={[styles.input, errors.species && styles.inputError]}
           value={species}
           onChangeText={setSpecies}
-          placeholder="Enter species"
+          placeholder="Voer soort in"
           testID="input-species"
         />
         {errors.species && (
@@ -160,18 +160,18 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
       </View>
       
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Subspecies</Text>
+        <Text style={styles.label}>Ondersoort</Text>
         <TextInput
           style={styles.input}
           value={subspecies}
           onChangeText={setSubspecies}
-          placeholder="Enter subspecies (optional)"
+          placeholder="Voer ondersoort in (optioneel)"
           testID="input-subspecies"
         />
       </View>
       
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Gender</Text>
+        <Text style={styles.label}>Geslacht</Text>
         <View style={styles.optionsContainer}>
           <TouchableOpacity
             style={[
@@ -186,7 +186,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
               styles.optionText,
               gender === 'male' && styles.selectedOptionText,
             ]}>
-              Male
+              Man
             </Text>
           </TouchableOpacity>
           
@@ -203,7 +203,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
               styles.optionText,
               gender === 'female' && styles.selectedOptionText,
             ]}>
-              Female
+              Vrouw
             </Text>
           </TouchableOpacity>
           
@@ -220,25 +220,25 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
               styles.optionText,
               gender === 'unknown' && styles.selectedOptionText,
             ]}>
-              Unknown
+              Onbekend
             </Text>
           </TouchableOpacity>
         </View>
       </View>
       
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Color Mutation</Text>
+        <Text style={styles.label}>Kleurmutatie</Text>
         <TextInput
           style={styles.input}
           value={colorMutation}
           onChangeText={setColorMutation}
-          placeholder="Enter color mutation (optional)"
+          placeholder="Voer kleurmutatie in (optioneel)"
           testID="input-color-mutation"
         />
       </View>
       
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Birth Date</Text>
+        <Text style={styles.label}>Geboortedatum</Text>
         <View style={styles.dateInputContainer}>
           <TextInput
             style={styles.dateInput}
@@ -261,7 +261,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
       </View>
       
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Origin</Text>
+        <Text style={styles.label}>Herkomst</Text>
         <View style={styles.optionsContainer}>
           <TouchableOpacity
             style={[
@@ -275,7 +275,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
               styles.optionText,
               origin === 'purchased' && styles.selectedOptionText,
             ]}>
-              Purchased
+              Gekocht
             </Text>
           </TouchableOpacity>
           
@@ -291,7 +291,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
               styles.optionText,
               origin === 'bred' && styles.selectedOptionText,
             ]}>
-              Bred
+              Gefokt
             </Text>
           </TouchableOpacity>
           
@@ -307,7 +307,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
               styles.optionText,
               origin === 'rescue' && styles.selectedOptionText,
             ]}>
-              Rescue
+              Gered
             </Text>
           </TouchableOpacity>
         </View>
@@ -328,7 +328,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
               styles.optionText,
               status === 'active' && styles.selectedOptionText,
             ]}>
-              Active
+              Actief
             </Text>
           </TouchableOpacity>
           
@@ -344,7 +344,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
               styles.optionText,
               status === 'deceased' && styles.selectedOptionText,
             ]}>
-              Deceased
+              Overleden
             </Text>
           </TouchableOpacity>
           
@@ -360,7 +360,7 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
               styles.optionText,
               status === 'sold' && styles.selectedOptionText,
             ]}>
-              Sold
+              Verkocht
             </Text>
           </TouchableOpacity>
           
@@ -376,14 +376,14 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
               styles.optionText,
               status === 'exchanged' && styles.selectedOptionText,
             ]}>
-              Exchanged
+              Geruild
             </Text>
           </TouchableOpacity>
         </View>
       </View>
       
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Bird Image</Text>
+        <Text style={styles.label}>Vogelafbeelding</Text>
         {imageUri ? (
           <View style={styles.imagePreviewContainer}>
             <Image source={{ uri: imageUri }} style={styles.imagePreview} />
@@ -398,14 +398,14 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
         ) : (
           <View style={styles.imageButtonsContainer}>
             <Button
-              title="Choose from Gallery"
+              title="Kies uit Galerij"
               onPress={pickImage}
               type="outline"
               icon={<ImageIcon size={20} color={Colors.primary} />}
               testID="button-pick-image"
             />
             <Button
-              title="Take Photo"
+              title="Maak Foto"
               onPress={takePhoto}
               type="outline"
               icon={<Camera size={20} color={Colors.primary} />}
@@ -416,12 +416,12 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
       </View>
       
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Notes</Text>
+        <Text style={styles.label}>Notities</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={notes}
           onChangeText={setNotes}
-          placeholder="Enter notes about this bird"
+          placeholder="Voer notities over deze vogel in"
           multiline
           numberOfLines={4}
           testID="input-notes"
@@ -430,13 +430,13 @@ const BirdForm: React.FC<BirdFormProps> = ({ initialBird, onSubmit }) => {
       
       <View style={styles.buttonContainer}>
         <Button
-          title="Cancel"
+          title="Annuleren"
           onPress={() => router.back()}
           type="outline"
           testID="button-cancel"
         />
         <Button
-          title={initialBird ? "Update Bird" : "Add Bird"}
+          title={initialBird ? "Vogel Bijwerken" : "Vogel Toevoegen"}
           onPress={handleSubmit}
           loading={isSubmitting}
           testID="button-submit"

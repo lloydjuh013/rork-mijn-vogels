@@ -36,17 +36,17 @@ export default function AviariesScreen() {
         
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Birds:</Text>
+            <Text style={styles.statLabel}>Vogels:</Text>
             <Text style={styles.statValue}>{birdsInAviary.length}</Text>
           </View>
           
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Available:</Text>
+            <Text style={styles.statLabel}>Beschikbaar:</Text>
             <Text style={styles.statValue}>{Math.max(0, item.capacity - birdsInAviary.length)}</Text>
           </View>
           
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Capacity:</Text>
+            <Text style={styles.statLabel}>Capaciteit:</Text>
             <Text style={styles.statValue}>{item.capacity}</Text>
           </View>
         </View>
@@ -62,10 +62,10 @@ export default function AviariesScreen() {
     <View style={styles.container}>
       {aviaries.length === 0 ? (
         <EmptyState
-          title="No Aviaries Yet"
-          message="Add your first aviary to organize your birds by location."
+          title="Nog Geen Kooien"
+          message="Voeg je eerste kooi toe om je vogels per locatie te organiseren."
           icon={<Home size={40} color={Colors.info} />}
-          actionLabel="Add Aviary"
+          actionLabel="Kooi Toevoegen"
           onAction={() => router.push('/aviaries/add')}
         />
       ) : (

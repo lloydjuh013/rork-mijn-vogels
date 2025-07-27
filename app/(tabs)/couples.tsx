@@ -32,7 +32,7 @@ export default function CouplesScreen() {
         
         <View style={styles.coupleContent}>
           <View style={styles.coupleHeader}>
-            <Text style={styles.coupleId}>Couple #{item.id.slice(0, 8)}</Text>
+            <Text style={styles.coupleId}>Koppel #{item.id.slice(0, 8)}</Text>
             <Text style={styles.season}>{item.season}</Text>
           </View>
           
@@ -40,7 +40,7 @@ export default function CouplesScreen() {
             <View style={styles.birdInfo}>
               <View style={[styles.genderIndicator, { backgroundColor: Colors.male }]} />
               <Text style={styles.birdName} numberOfLines={1}>
-                {male ? male.ringNumber : 'Unknown Male'}
+                {male ? male.ringNumber : 'Onbekend Mannetje'}
               </Text>
             </View>
             
@@ -49,7 +49,7 @@ export default function CouplesScreen() {
             <View style={styles.birdInfo}>
               <View style={[styles.genderIndicator, { backgroundColor: Colors.female }]} />
               <Text style={styles.birdName} numberOfLines={1}>
-                {female ? female.ringNumber : 'Unknown Female'}
+                {female ? female.ringNumber : 'Onbekend Vrouwtje'}
               </Text>
             </View>
           </View>
@@ -77,7 +77,7 @@ export default function CouplesScreen() {
             styles.filterButtonText,
             activeFilter === null && styles.activeFilterButtonText,
           ]}>
-            All
+            Alle
           </Text>
         </TouchableOpacity>
         
@@ -93,7 +93,7 @@ export default function CouplesScreen() {
             styles.filterButtonText,
             activeFilter === true && styles.activeFilterButtonText,
           ]}>
-            Active
+            Actief
           </Text>
         </TouchableOpacity>
         
@@ -109,17 +109,17 @@ export default function CouplesScreen() {
             styles.filterButtonText,
             activeFilter === false && styles.activeFilterButtonText,
           ]}>
-            Inactive
+            Inactief
           </Text>
         </TouchableOpacity>
       </View>
 
       {couples.length === 0 ? (
         <EmptyState
-          title="No Couples Yet"
-          message="Create your first breeding couple to start tracking nests and offspring."
+          title="Nog Geen Koppels"
+          message="Maak je eerste broedkoppel aan om nesten en nakomelingen bij te houden."
           icon={<Users size={40} color={Colors.secondary} />}
-          actionLabel="Add Couple"
+          actionLabel="Koppel Toevoegen"
           onAction={() => router.push('/couples/add')}
         />
       ) : (
@@ -130,7 +130,7 @@ export default function CouplesScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No couples match your filter criteria</Text>
+              <Text style={styles.emptyText}>Geen koppels voldoen aan je filtercriteria</Text>
             </View>
           }
         />

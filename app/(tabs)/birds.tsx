@@ -47,7 +47,7 @@ export default function BirdsScreen() {
           <Search size={20} color={Colors.textLight} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search birds..."
+            placeholder="Zoek vogels..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             testID="search-input"
@@ -75,7 +75,7 @@ export default function BirdsScreen() {
             styles.filterButtonText,
             statusFilter === null && styles.activeFilterButtonText,
           ]}>
-            All
+            Alle
           </Text>
         </TouchableOpacity>
         
@@ -91,7 +91,7 @@ export default function BirdsScreen() {
             styles.filterButtonText,
             statusFilter === 'active' && styles.activeFilterButtonText,
           ]}>
-            Active
+            Actief
           </Text>
         </TouchableOpacity>
         
@@ -107,7 +107,7 @@ export default function BirdsScreen() {
             styles.filterButtonText,
             statusFilter === 'deceased' && styles.activeFilterButtonText,
           ]}>
-            Deceased
+            Overleden
           </Text>
         </TouchableOpacity>
         
@@ -123,17 +123,17 @@ export default function BirdsScreen() {
             styles.filterButtonText,
             statusFilter === 'sold' && styles.activeFilterButtonText,
           ]}>
-            Sold
+            Verkocht
           </Text>
         </TouchableOpacity>
       </View>
 
       {birds.length === 0 ? (
         <EmptyState
-          title="No Birds Yet"
-          message="Add your first bird to get started with your collection."
+          title="Nog Geen Vogels"
+          message="Voeg je eerste vogel toe om te beginnen met je collectie."
           icon={<BirdIcon size={40} color={Colors.primary} />}
-          actionLabel="Add Bird"
+          actionLabel="Vogel Toevoegen"
           onAction={() => router.push('/birds/add')}
         />
       ) : (
@@ -147,7 +147,7 @@ export default function BirdsScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No birds match your search criteria</Text>
+              <Text style={styles.emptyText}>Geen vogels voldoen aan je zoekcriteria</Text>
             </View>
           }
         />
