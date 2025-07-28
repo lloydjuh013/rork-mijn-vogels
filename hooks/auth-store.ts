@@ -32,6 +32,8 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
     .single();
 
   if (error || !profile) {
+    console.log('Profile not found, creating new profile for user:', supabaseUser.id);
+    
     // If no profile exists, create one
     const newProfile = {
       id: supabaseUser.id,
@@ -39,19 +41,38 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
       name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'Gebruiker',
     };
 
-    const { error: insertError } = await supabase
+    const { data: insertedProfile, error: insertError } = await supabase
       .from('profiles')
-      .insert(newProfile);
+      .insert(newProfile)
+      .select()
+      .single();
 
     if (insertError) {
-      console.error('Error creating profile:', insertError);
+      console.error('Error creating profile:', {
+        error: insertError,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        code: insertError.code
+      });
+      
+      // If profile creation fails, still return user data
+      // The trigger should have created the profile automatically
+      return {
+        id: newProfile.id,
+        email: newProfile.email,
+        name: newProfile.name,
+        createdAt: new Date(supabaseUser.created_at),
+        isActive: true,
+      };
     }
 
+    console.log('Profile created successfully:', insertedProfile);
     return {
-      id: newProfile.id,
-      email: newProfile.email,
-      name: newProfile.name,
-      createdAt: new Date(supabaseUser.created_at),
+      id: insertedProfile.id,
+      email: insertedProfile.email,
+      name: insertedProfile.name,
+      createdAt: new Date(insertedProfile.created_at),
       isActive: true,
     };
   }
@@ -139,16 +160,33 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       if (authError) {
         console.error('Supabase auth error:', authError);
-        if (authError.message.includes('already registered')) {
+        
+        // Handle rate limiting
+        if (authError.message.includes('For security purposes, you can only request this after')) {
+          throw new Error('Te veel registratiepogingen. Wacht even en probeer opnieuw.');
+        }
+        
+        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
           throw new Error('Er bestaat al een account met dit e-mailadres');
         }
-        throw new Error(authError.message);
+        
+        if (authError.message.includes('Password should be at least')) {
+          throw new Error('Wachtwoord moet minimaal 6 karakters lang zijn');
+        }
+        
+        if (authError.message.includes('Invalid email')) {
+          throw new Error('Ongeldig e-mailadres');
+        }
+        
+        throw new Error('Registratie mislukt: ' + authError.message);
       }
 
       if (!authData.user) {
         throw new Error('Registratie mislukt - geen gebruiker ontvangen');
       }
 
+      console.log('Auth registration successful, converting user data');
+      
       // Convert to our User type
       const user = await convertSupabaseUser(authData.user);
       console.log('Registration successful:', user);
@@ -180,21 +218,32 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       if (authError) {
         console.error('Supabase auth error:', authError);
+        
+        // Handle rate limiting
+        if (authError.message.includes('For security purposes, you can only request this after')) {
+          throw new Error('Te veel inlogpogingen. Wacht even en probeer opnieuw.');
+        }
+        
         if (authError.message.includes('Invalid login credentials')) {
           throw new Error('Onjuiste inloggegevens');
         }
+        
         if (authError.message.includes('Email not confirmed')) {
           throw new Error('E-mail nog niet bevestigd. Controleer je inbox.');
         }
+        
         if (authError.message.includes('User not found')) {
           throw new Error('Geen account gevonden met dit e-mailadres');
         }
+        
         if (authError.message.includes('Invalid email')) {
           throw new Error('Ongeldig e-mailadres');
         }
+        
         if (authError.message.includes('Password should be at least')) {
           throw new Error('Wachtwoord moet minimaal 6 karakters lang zijn');
         }
+        
         throw new Error('Inloggen mislukt: ' + authError.message);
       }
 
@@ -202,6 +251,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         throw new Error('Inloggen mislukt - geen gebruiker ontvangen');
       }
 
+      console.log('Auth login successful, converting user data');
+      
       // Convert to our User type
       const user = await convertSupabaseUser(authData.user);
       console.log('Login successful for:', user.email);
@@ -223,23 +274,41 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     mutationFn: async (): Promise<void> => {
       console.log('Starting logout process...');
       
-      const { error } = await supabase.auth.signOut({
-        scope: 'local' // Only sign out locally, not from all sessions
-      });
-      
-      if (error) {
-        console.error('Supabase logout error:', error);
-        throw new Error('Uitloggen mislukt: ' + error.message);
+      try {
+        // First, clear local data immediately
+        queryClient.setQueryData(['currentUser'], null);
+        
+        // Then sign out from Supabase
+        const { error } = await supabase.auth.signOut({
+          scope: 'local' // Only sign out locally, not from all sessions
+        });
+        
+        if (error) {
+          console.error('Supabase logout error:', error);
+          // Don't throw error for logout - we've already cleared local data
+          console.log('Local data cleared despite Supabase error');
+        } else {
+          console.log('Successfully logged out from Supabase');
+        }
+        
+        // Clear all cached data
+        queryClient.clear();
+        
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Still clear local data even if there's an error
+        queryClient.setQueryData(['currentUser'], null);
+        queryClient.clear();
       }
-      
-      console.log('Successfully logged out from Supabase');
     },
     onSuccess: () => {
-      console.log('Logout successful, clearing all data');
-      // The auth state change listener will handle clearing data
+      console.log('Logout completed successfully');
     },
     onError: (error) => {
       console.error('Logout failed:', error);
+      // Ensure data is cleared even on error
+      queryClient.setQueryData(['currentUser'], null);
+      queryClient.clear();
     },
   });
 

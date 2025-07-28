@@ -9,9 +9,10 @@ import Button from '@/components/Button';
 export default function CoupleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { getCoupleById, getBirdById, deleteCouple, getNestsByCouple, getOffspring, updateCouple } = useBirdStore();
+  const { getCoupleById, getBirdById, deleteCouple, getNestsByCouple, getOffspring, updateCouple, couples } = useBirdStore();
 
   const couple = getCoupleById(id);
+  const coupleIndex = couples.findIndex(c => c.id === id) + 1;
   
   if (!couple) {
     return (
@@ -62,11 +63,11 @@ export default function CoupleDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: `Koppel #${id.slice(0, 8)}` }} />
+      <Stack.Screen options={{ title: `Koppel #${coupleIndex}` }} />
       <ScrollView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.coupleInfo}>
-          <Text style={styles.coupleTitle}>Koppel #{id.slice(0, 8)}</Text>
+          <Text style={styles.coupleTitle}>Koppel #{coupleIndex}</Text>
           <View style={[styles.statusBadge, { 
             backgroundColor: couple.active ? Colors.success : Colors.textLighter 
           }]}>
