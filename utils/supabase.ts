@@ -1,10 +1,11 @@
+import 'react-native-url-polyfill/auto';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 
-// Get environment variables with fallback
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || Constants.expoConfig?.extra?.supabaseUrl || 'https://ywzoxzkwakmiaykbkevk.supabase.co';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || Constants.expoConfig?.extra?.supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3em94emt3YWttaWF5a2JrZXZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2NDk3NTAsImV4cCI6MjA2OTIyNTc1MH0.uHs54k3fVylJu_TI6WfmTtZnhuV1eH0RQvXFhxyKLaI';
+// Get environment variables
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
 console.log('Supabase URL:', supabaseUrl);
 console.log('Supabase Key exists:', !!supabaseAnonKey);
@@ -14,17 +15,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
     EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
     EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ? 'exists' : 'missing'
   });
-  throw new Error('Missing Supabase environment variables. Please add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to your environment.');
+  throw new Error('Missing Supabase environment variables. Please add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to your .env file.');
 }
 
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Configure auth for cross-platform compatibility
-    storage: Platform.select({
-      web: undefined, // Use default localStorage on web
-      default: undefined, // Use AsyncStorage on mobile (handled by Supabase)
-    }),
+    storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: Platform.OS === 'web',

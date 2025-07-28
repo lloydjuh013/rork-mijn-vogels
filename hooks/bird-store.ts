@@ -32,7 +32,7 @@ const getBirds = async (userId: string): Promise<Bird[]> => {
     gender: bird.gender,
     birthDate: bird.birth_date ? new Date(bird.birth_date) : new Date(),
     ringNumber: bird.ring_number || '',
-    colorMutation: bird.color || undefined,
+    colorMutation: bird.color_mutation || undefined,
     notes: bird.notes || undefined,
     imageUri: bird.image_url || undefined,
     origin: 'purchased' as const,
@@ -178,7 +178,7 @@ export const [BirdStoreProvider, useBirdStore] = createContextHook(() => {
           gender: bird.gender,
           birth_date: bird.birthDate?.toISOString().split('T')[0] || null,
           ring_number: bird.ringNumber || null,
-          color: bird.colorMutation || null,
+          color_mutation: bird.colorMutation || null,
           notes: bird.notes || null,
           image_url: bird.imageUri || null,
         })
@@ -205,7 +205,7 @@ export const [BirdStoreProvider, useBirdStore] = createContextHook(() => {
           gender: bird.gender,
           birth_date: bird.birthDate?.toISOString().split('T')[0] || null,
           ring_number: bird.ringNumber || null,
-          color: bird.colorMutation || null,
+          color_mutation: bird.colorMutation || null,
           notes: bird.notes || null,
           image_url: bird.imageUri || null,
         })
