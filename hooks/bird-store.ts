@@ -13,7 +13,13 @@ const getBirds = async (userId: string): Promise<Bird[]> => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching birds:', error);
+    console.error('Error fetching birds:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+    console.error('Full error object:', JSON.stringify(error, null, 2));
     throw error;
   }
 
@@ -48,7 +54,13 @@ const getCouples = async (userId: string): Promise<Couple[]> => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching couples:', error);
+    console.error('Error fetching couples:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+    console.error('Full error object:', JSON.stringify(error, null, 2));
     throw error;
   }
 
@@ -71,7 +83,13 @@ const getAviaries = async (userId: string): Promise<Aviary[]> => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching aviaries:', error);
+    console.error('Error fetching aviaries:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+    console.error('Full error object:', JSON.stringify(error, null, 2));
     throw error;
   }
 
@@ -98,7 +116,13 @@ const getNests = async (userId: string): Promise<Nest[]> => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching nests:', error);
+    console.error('Error fetching nests:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+    console.error('Full error object:', JSON.stringify(error, null, 2));
     throw error;
   }
 

@@ -49,12 +49,12 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
 
     if (insertError) {
       console.error('Error creating profile:', {
-        error: insertError,
         message: insertError.message,
         details: insertError.details,
         hint: insertError.hint,
         code: insertError.code
       });
+      console.error('Full error object:', JSON.stringify(insertError, null, 2));
       
       // If profile creation fails, still return user data
       // The trigger should have created the profile automatically
