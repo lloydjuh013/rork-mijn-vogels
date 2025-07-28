@@ -2,10 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
-import { View, Image, StyleSheet } from "react-native";
+import { View, Image, StyleSheet, Text } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BirdStoreProvider } from "@/hooks/bird-store";
 import { AuthProvider, useAuth } from "@/hooks/auth-store";
+import Colors from "@/constants/colors";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -16,39 +17,38 @@ function RootLayoutNav() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [forceShowApp, setForceShowApp] = useState(false);
 
-  // Fallback timeout to prevent infinite loading
+  // Handle navigation after auth state is determined
   useEffect(() => {
-    const fallbackTimer = setTimeout(() => {
-      console.log('Auth loading timeout - forcing app to show');
-      setForceShowApp(true);
-      if (!hasInitialized) {
-        setHasInitialized(true);
-        router.replace('/auth/register');
-      }
-    }, 15000); // 15 second fallback
-
-    return () => clearTimeout(fallbackTimer);
-  }, [hasInitialized, router]);
-
-  // Only redirect once after initial load
-  useEffect(() => {
-    if ((!isLoading || forceShowApp) && !hasInitialized) {
+    if (!isLoading && !hasInitialized) {
+      console.log('Auth loading complete, navigating...', { isAuthenticated });
       setHasInitialized(true);
       
-      if (!isAuthenticated) {
-        console.log('User not authenticated, redirecting to register');
-        router.replace('/auth/register');
-      } else {
-        console.log('User authenticated, redirecting to tabs');
-        router.replace('/(tabs)');
-      }
+      // Small delay to ensure smooth transition
+      setTimeout(() => {
+        if (isAuthenticated) {
+          console.log('User authenticated, redirecting to tabs');
+          router.replace('/(tabs)');
+        } else {
+          console.log('User not authenticated, redirecting to register');
+          router.replace('/auth/register');
+        }
+      }, 100);
     }
-  }, [isLoading, isAuthenticated, router, hasInitialized, forceShowApp]);
+  }, [isLoading, isAuthenticated, router, hasInitialized]);
 
-  if ((isLoading && !forceShowApp) || !hasInitialized) {
-    return null; // Show nothing while checking auth
+  // Show loading screen while auth is being determined
+  if (isLoading || !hasInitialized) {
+    return (
+      <View style={loadingStyles.container}>
+        <Image 
+          source={{ uri: 'https://r2-pub.rork.com/attachments/a2oglfpfmwgv5i922kwvg' }}
+          style={loadingStyles.logo}
+          resizeMode="contain"
+        />
+        <Text style={loadingStyles.loadingText}>MyBird wordt geladen...</Text>
+      </View>
+    );
   }
 
   return (
@@ -84,37 +84,43 @@ function RootLayoutNav() {
   );
 }
 
-function SplashScreenComponent() {
-  return (
-    <View style={splashStyles.container}>
-      <Image 
-        source={{ uri: 'https://r2-pub.rork.com/attachments/a2oglfpfmwgv5i922kwvg' }}
-        style={splashStyles.logo}
-        resizeMode="contain"
-      />
-    </View>
-  );
-}
-
 export default function RootLayout() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
     const initApp = async () => {
-      // Show splash for minimum time
-      const timer = setTimeout(() => {
-        setShowSplash(false);
+      try {
+        // Show splash for minimum time
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        console.log('App initialization complete');
+        setAppReady(true);
+        
+        // Hide the native splash screen
+        await SplashScreen.hideAsync();
+      } catch (error) {
+        console.error('Error during app initialization:', error);
+        setAppReady(true);
         SplashScreen.hideAsync();
-      }, 2500);
-
-      return () => clearTimeout(timer);
+      }
     };
 
     initApp();
   }, []);
 
-  if (showSplash) {
-    return <SplashScreenComponent />;
+  // Show custom splash screen while app is initializing
+  if (!appReady) {
+    return (
+      <View style={splashStyles.container}>
+        <Image 
+          source={{ uri: 'https://r2-pub.rork.com/attachments/a2oglfpfmwgv5i922kwvg' }}
+          style={splashStyles.logo}
+          resizeMode="contain"
+        />
+        <Text style={splashStyles.appName}>MyBird</Text>
+        <Text style={splashStyles.tagline}>Vogelkweek Beheer</Text>
+      </View>
+    );
   }
 
   return (
@@ -133,12 +139,43 @@ export default function RootLayout() {
 const splashStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
   logo: {
-    width: 300,
-    height: 200,
+    width: 200,
+    height: 150,
+    marginBottom: 20,
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: Colors.primary,
+    marginBottom: 8,
+  },
+  tagline: {
+    fontSize: 16,
+    color: Colors.textLight,
+    textAlign: 'center',
+  },
+});
+
+const loadingStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logo: {
+    width: 150,
+    height: 100,
+    marginBottom: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.textLight,
+    textAlign: 'center',
   },
 });

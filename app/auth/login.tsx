@@ -8,21 +8,13 @@ import { useAuth } from '@/hooks/auth-store';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, isLoggingIn, loginError, isAuthenticated } = useAuth();
+  const { login, isLoggingIn, loginError } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
-  
-  // Redirect to main app when authenticated
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      console.log('User is now authenticated, redirecting to main app');
-      router.replace('/(tabs)');
-    }
-  }, [isAuthenticated, router]);
 
   const handleLogin = () => {
     // Validation

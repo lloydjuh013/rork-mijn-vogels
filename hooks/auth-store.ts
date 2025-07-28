@@ -184,7 +184,7 @@ const getCurrentUser = async (): Promise<User | null> => {
     
     // Add timeout to prevent infinite loading
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Auth timeout')), 10000); // 10 second timeout
+      setTimeout(() => reject(new Error('Auth timeout')), 5000); // 5 second timeout
     });
     
     const authPromise = supabase.auth.getUser();
@@ -207,7 +207,11 @@ const getCurrentUser = async (): Promise<User | null> => {
     console.log('Found authenticated user:', supabaseUser.email);
     return await convertSupabaseUser(supabaseUser);
   } catch (error) {
-    console.error('Error getting current user:', error);
+    if (error instanceof Error && error.message === 'Auth timeout') {
+      console.log('Auth check timed out - assuming no user');
+    } else {
+      console.error('Error getting current user:', error);
+    }
     return null;
   }
 };
@@ -226,6 +230,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     queryFn: getCurrentUser,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   // Listen to auth state changes
@@ -314,7 +321,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     onSuccess: (user) => {
       console.log('Registration successful, updating queries');
       queryClient.setQueryData(['currentUser'], user);
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      // Don't invalidate immediately after setting data
     },
     onError: (error) => {
       console.error('Registration failed:', error);
@@ -384,7 +391,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     onSuccess: (user) => {
       console.log('Login successful, updating queries');
       queryClient.setQueryData(['currentUser'], user);
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      // Don't invalidate immediately after setting data
     },
     onError: (error) => {
       console.error('Login failed:', error);
@@ -438,13 +445,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   // Computed values
   const user = userQuery.data;
-  const isLoading = userQuery.isLoading;
+  const isLoading = userQuery.isLoading && userQuery.fetchStatus !== 'idle';
   const isAuthenticated = !!user;
   
   console.log('Auth Debug:', { 
     hasUser: !!user, 
     isAuthenticated,
     isLoading,
+    fetchStatus: userQuery.fetchStatus,
     userEmail: user?.email
   });
   
