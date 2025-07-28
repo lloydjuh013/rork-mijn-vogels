@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/auth-store';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { register, isRegistering, registerError, isAuthenticated } = useAuth();
+  const { register, isRegistering, registerError } = useAuth();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -62,13 +62,7 @@ export default function RegisterScreen() {
     });
   };
   
-  // Redirect to main app when authenticated
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      console.log('User is now authenticated, redirecting to main app');
-      router.replace('/(tabs)');
-    }
-  }, [isAuthenticated, router]);
+  // The layout will handle redirects automatically
 
   const openWebsite = () => {
     Linking.openURL('https://mybird.app');

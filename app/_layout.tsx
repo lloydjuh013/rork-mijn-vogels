@@ -15,10 +15,13 @@ const queryClient = new QueryClient();
 function RootLayoutNav() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Redirect to registration if not authenticated after loading
+  // Only redirect once after initial load
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && !hasInitialized) {
+      setHasInitialized(true);
+      
       if (!isAuthenticated) {
         console.log('User not authenticated, redirecting to register');
         router.replace('/auth/register');
@@ -27,9 +30,9 @@ function RootLayoutNav() {
         router.replace('/(tabs)');
       }
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, router, hasInitialized]);
 
-  if (isLoading) {
+  if (isLoading || !hasInitialized) {
     return null; // Show nothing while checking auth
   }
 

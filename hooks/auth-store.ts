@@ -220,10 +220,15 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           // Clear all data when signed out
           queryClient.setQueryData(['currentUser'], null);
           queryClient.clear();
-        } else if (event === 'SIGNED_IN' && session?.user) {
-          // Update user data when signed in
-          const user = await convertSupabaseUser(session.user);
-          queryClient.setQueryData(['currentUser'], user);
+        } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+          // Update user data when signed in or token refreshed
+          try {
+            const user = await convertSupabaseUser(session.user);
+            queryClient.setQueryData(['currentUser'], user);
+            console.log('User data updated in auth state change:', user.email);
+          } catch (error) {
+            console.error('Error converting user in auth state change:', error);
+          }
         }
       }
     );
