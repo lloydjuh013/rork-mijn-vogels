@@ -32,7 +32,30 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
     .single();
 
   if (error || !profile) {
-    console.log('Profile not found, creating new profile for user:', supabaseUser.id);
+    console.log('Profile not found for user:', supabaseUser.id);
+    
+    // Wait a moment for the trigger to potentially create the profile
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Try to fetch the profile again in case the trigger created it
+    const { data: retryProfile, error: retryError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', supabaseUser.id)
+      .single();
+      
+    if (retryProfile) {
+      console.log('Profile found after retry:', retryProfile);
+      return {
+        id: retryProfile.id,
+        email: retryProfile.email,
+        name: retryProfile.name,
+        createdAt: new Date(retryProfile.created_at),
+        isActive: true,
+      };
+    }
+    
+    console.log('Profile still not found, creating manually for user:', supabaseUser.id);
     
     // If no profile exists, create one
     const newProfile = {
@@ -52,9 +75,41 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
         message: insertError.message,
         details: insertError.details,
         hint: insertError.hint,
-        code: insertError.code
+        code: insertError.code,
+        fullError: insertError
       });
-      console.error('Full error object:', JSON.stringify(insertError, null, 2));
+      
+      // Check if the error is due to duplicate key (profile already exists from trigger)
+      if (insertError.code === '23505' || insertError.message?.includes('duplicate key')) {
+        console.log('Profile already exists from trigger, fetching existing profile');
+        
+        // Try to fetch the existing profile created by the trigger
+        const { data: existingProfile, error: fetchError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', supabaseUser.id)
+          .single();
+          
+        if (existingProfile) {
+          console.log('Found existing profile:', existingProfile);
+          return {
+            id: existingProfile.id,
+            email: existingProfile.email,
+            name: existingProfile.name,
+            createdAt: new Date(existingProfile.created_at),
+            isActive: true,
+          };
+        }
+        
+        if (fetchError) {
+          console.error('Error fetching existing profile:', {
+            message: fetchError.message,
+            details: fetchError.details,
+            hint: fetchError.hint,
+            code: fetchError.code
+          });
+        }
+      }
       
       // If profile creation fails, still return user data
       // The trigger should have created the profile automatically

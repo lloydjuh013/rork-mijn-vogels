@@ -19,7 +19,7 @@ const getBirds = async (userId: string): Promise<Bird[]> => {
       hint: error.hint,
       code: error.code
     });
-    console.error('Full error object:', JSON.stringify(error, null, 2));
+
     throw error;
   }
 
@@ -58,9 +58,9 @@ const getCouples = async (userId: string): Promise<Couple[]> => {
       message: error.message,
       details: error.details,
       hint: error.hint,
-      code: error.code
+      code: error.code,
+      fullError: error
     });
-    console.error('Full error object:', JSON.stringify(error, null, 2));
     throw error;
   }
 
@@ -87,9 +87,9 @@ const getAviaries = async (userId: string): Promise<Aviary[]> => {
       message: error.message,
       details: error.details,
       hint: error.hint,
-      code: error.code
+      code: error.code,
+      fullError: error
     });
-    console.error('Full error object:', JSON.stringify(error, null, 2));
     throw error;
   }
 
@@ -120,9 +120,10 @@ const getNests = async (userId: string): Promise<Nest[]> => {
       message: error.message,
       details: error.details,
       hint: error.hint,
-      code: error.code
+      code: error.code,
+      fullError: error
     });
-    console.error('Full error object:', JSON.stringify(error, null, 2));
+
     throw error;
   }
 
