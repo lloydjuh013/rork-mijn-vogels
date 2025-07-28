@@ -71,15 +71,14 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
       .single();
 
     if (insertError) {
-      console.error('Error creating profile:', insertError.message);
-      console.error('Full error object:', {
+      console.error('Error creating profile:', insertError.message || 'Unknown error');
+      console.error('Full error object:', JSON.stringify({
         message: insertError.message,
         details: insertError.details,
         hint: insertError.hint,
-        code: insertError.code,
-        stack: insertError.stack
-      });
-      console.error('Error details:', insertError);
+        code: insertError.code
+      }, null, 2));
+      console.error('Error details:', JSON.stringify(insertError, null, 2));
       
       // Check if the error is due to duplicate key (profile already exists from trigger)
       if (insertError.code === '23505' || insertError.message?.includes('duplicate key')) {
@@ -104,15 +103,14 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
         }
         
         if (fetchError) {
-          console.error('Error fetching existing profile:', fetchError.message);
-          console.error('Fetch error details:', {
+          console.error('Error fetching existing profile:', fetchError.message || 'Unknown error');
+          console.error('Fetch error details:', JSON.stringify({
             message: fetchError.message,
             details: fetchError.details,
             hint: fetchError.hint,
-            code: fetchError.code,
-            stack: fetchError.stack
-          });
-          console.error('Full fetch error:', fetchError);
+            code: fetchError.code
+          }, null, 2));
+          console.error('Full fetch error:', JSON.stringify(fetchError, null, 2));
         }
       }
       
@@ -219,11 +217,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       });
 
       if (authError) {
-        console.error('Supabase auth error:', {
+        console.error('Supabase auth error:', JSON.stringify({
           message: authError.message,
           status: authError.status
-        });
-        console.error('Full auth error:', authError);
+        }, null, 2));
+        console.error('Full auth error:', JSON.stringify(authError, null, 2));
         
         // Handle rate limiting
         if (authError.message.includes('For security purposes, you can only request this after')) {
@@ -281,11 +279,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       });
 
       if (authError) {
-        console.error('Supabase auth error:', {
+        console.error('Supabase auth error:', JSON.stringify({
           message: authError.message,
           status: authError.status
-        });
-        console.error('Full auth error:', authError);
+        }, null, 2));
+        console.error('Full auth error:', JSON.stringify(authError, null, 2));
         
         // Handle rate limiting
         if (authError.message.includes('For security purposes, you can only request this after')) {
