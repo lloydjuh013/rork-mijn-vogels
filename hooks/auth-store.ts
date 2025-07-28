@@ -64,6 +64,7 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
       name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'Gebruiker',
     };
 
+    // Try to create profile manually (this might fail due to RLS, which is expected)
     const { data: insertedProfile, error: insertError } = await supabase
       .from('profiles')
       .insert(newProfile)
@@ -71,14 +72,37 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
       .single();
 
     if (insertError) {
-      console.error('Error creating profile:', insertError.message || 'Unknown error');
-      console.error('Full error object:', JSON.stringify({
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint,
-        code: insertError.code
-      }, null, 2));
-      console.error('Error details:', JSON.stringify(insertError, null, 2));
+      console.log('Manual profile creation failed (expected if RLS is working):', insertError.message);
+      
+      // Check if the error is due to RLS policy violation
+      if (insertError.code === '42501' || insertError.message?.includes('row-level security policy')) {
+        console.log('RLS policy violation - this is expected. The trigger should create the profile.');
+        
+        // Wait a bit longer for the trigger to create the profile
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Try to fetch the profile created by the trigger
+        const { data: triggerProfile, error: triggerFetchError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', supabaseUser.id)
+          .single();
+          
+        if (triggerProfile) {
+          console.log('Profile created by trigger:', triggerProfile);
+          return {
+            id: triggerProfile.id,
+            email: triggerProfile.email,
+            name: triggerProfile.name,
+            createdAt: new Date(triggerProfile.created_at),
+            isActive: true,
+          };
+        }
+        
+        if (triggerFetchError) {
+          console.error('Error fetching trigger-created profile:', triggerFetchError.message);
+        }
+      }
       
       // Check if the error is due to duplicate key (profile already exists from trigger)
       if (insertError.code === '23505' || insertError.message?.includes('duplicate key')) {
@@ -101,18 +125,16 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
             isActive: true,
           };
         }
-        
-        if (fetchError) {
-          console.error('Error fetching existing profile:', fetchError.message || 'Unknown error');
-          console.error('Fetch error details:', JSON.stringify({
-            message: fetchError.message,
-            details: fetchError.details,
-            hint: fetchError.hint,
-            code: fetchError.code
-          }, null, 2));
-          console.error('Full fetch error:', JSON.stringify(fetchError, null, 2));
-        }
       }
+      
+      console.error('Error creating profile:', insertError.message || 'Unknown error');
+      console.error('Full error object:', JSON.stringify({
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        code: insertError.code
+      }, null, 2));
+      console.error('Error details:', JSON.stringify(insertError, null, 2));
       
       // If profile creation fails, still return user data
       // The trigger should have created the profile automatically
@@ -125,14 +147,16 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
       };
     }
 
-    console.log('Profile created successfully:', insertedProfile);
-    return {
-      id: insertedProfile.id,
-      email: insertedProfile.email,
-      name: insertedProfile.name,
-      createdAt: new Date(insertedProfile.created_at),
-      isActive: true,
-    };
+    if (insertedProfile) {
+      console.log('Profile created successfully:', insertedProfile);
+      return {
+        id: insertedProfile.id,
+        email: insertedProfile.email,
+        name: insertedProfile.name,
+        createdAt: new Date(insertedProfile.created_at),
+        isActive: true,
+      };
+    }
   }
 
   return {
