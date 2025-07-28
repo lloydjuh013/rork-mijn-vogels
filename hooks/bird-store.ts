@@ -53,9 +53,9 @@ const getCouples = async (userId: string): Promise<Couple[]> => {
 
   return (data || []).map(couple => ({
     id: couple.id,
-    maleBirdId: couple.male_bird_id,
-    femaleBirdId: couple.female_bird_id,
-    pairDate: new Date(couple.pair_date),
+    maleId: couple.male_bird_id,
+    femaleId: couple.female_bird_id,
+    season: new Date(couple.pair_date).getFullYear().toString(),
     active: couple.status === 'active',
     notes: couple.notes || undefined,
     createdAt: new Date(couple.created_at),
@@ -236,9 +236,9 @@ export const [BirdStoreProvider, useBirdStore] = createContextHook(() => {
         .from('couples')
         .insert({
           user_id: userId,
-          male_bird_id: couple.maleBirdId,
-          female_bird_id: couple.femaleBirdId,
-          pair_date: couple.pairDate.toISOString().split('T')[0],
+          male_bird_id: couple.maleId,
+          female_bird_id: couple.femaleId,
+          pair_date: new Date().toISOString().split('T')[0], // Use current date for pair date
           status: couple.active ? 'active' : 'inactive',
           notes: couple.notes || null,
         })
@@ -260,9 +260,9 @@ export const [BirdStoreProvider, useBirdStore] = createContextHook(() => {
       const { data, error } = await supabase
         .from('couples')
         .update({
-          male_bird_id: couple.maleBirdId,
-          female_bird_id: couple.femaleBirdId,
-          pair_date: couple.pairDate.toISOString().split('T')[0],
+          male_bird_id: couple.maleId,
+          female_bird_id: couple.femaleId,
+          pair_date: new Date().toISOString().split('T')[0], // Use current date for pair date
           status: couple.active ? 'active' : 'inactive',
           notes: couple.notes || null,
         })

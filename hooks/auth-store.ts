@@ -3,6 +3,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { User } from '@/types/bird';
 import { supabase } from '@/utils/supabase';
 import type { AuthError, User as SupabaseUser } from '@supabase/supabase-js';
+import { useEffect } from 'react';
 
 type AuthState = {
   user: User | null;
@@ -97,6 +98,27 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     retry: 1,
   });
 
+  // Listen to auth state changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (event === 'SIGNED_OUT' || !session) {
+          // Clear all data when signed out
+          queryClient.setQueryData(['currentUser'], null);
+          queryClient.clear();
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          // Update user data when signed in
+          const user = await convertSupabaseUser(session.user);
+          queryClient.setQueryData(['currentUser'], user);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [queryClient]);
+
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterData): Promise<User> => {
@@ -164,7 +186,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (authError.message.includes('Email not confirmed')) {
           throw new Error('E-mail nog niet bevestigd. Controleer je inbox.');
         }
-        throw new Error(authError.message);
+        if (authError.message.includes('User not found')) {
+          throw new Error('Geen account gevonden met dit e-mailadres');
+        }
+        if (authError.message.includes('Invalid email')) {
+          throw new Error('Ongeldig e-mailadres');
+        }
+        if (authError.message.includes('Password should be at least')) {
+          throw new Error('Wachtwoord moet minimaal 6 karakters lang zijn');
+        }
+        throw new Error('Inloggen mislukt: ' + authError.message);
       }
 
       if (!authData.user) {
@@ -192,27 +223,20 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     mutationFn: async (): Promise<void> => {
       console.log('Starting logout process...');
       
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({
+        scope: 'local' // Only sign out locally, not from all sessions
+      });
       
       if (error) {
         console.error('Supabase logout error:', error);
-        throw new Error('Uitloggen mislukt');
+        throw new Error('Uitloggen mislukt: ' + error.message);
       }
       
       console.log('Successfully logged out from Supabase');
     },
     onSuccess: () => {
       console.log('Logout successful, clearing all data');
-      // Immediately set queries to null to trigger state change
-      queryClient.setQueryData(['currentUser'], null);
-      
-      // Clear all cached data including bird data
-      queryClient.clear();
-      
-      // Force immediate refetch of auth queries
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      
-      console.log('All queries cleared and user logged out');
+      // The auth state change listener will handle clearing data
     },
     onError: (error) => {
       console.error('Logout failed:', error);

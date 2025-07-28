@@ -337,24 +337,24 @@ export default function SettingsScreen() {
           
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Data Locatie</Text>
-            <Text style={styles.infoValue}>Per Email Account (AsyncStorage)</Text>
+            <Text style={styles.infoValue}>Supabase Cloud Database</Text>
           </View>
         </View>
         
         <View style={styles.dataLocationInfo}>
-          <Text style={styles.dataLocationTitle}>📍 Waar worden mijn gegevens opgeslagen?</Text>
+          <Text style={styles.dataLocationTitle}>☁️ Waar worden mijn gegevens opgeslagen?</Text>
           <Text style={styles.dataLocationText}>
-            Je gegevens worden lokaal op je apparaat opgeslagen per email account. Dit betekent:
+            Je gegevens worden veilig opgeslagen in de cloud via Supabase. Dit betekent:
           </Text>
-          <Text style={styles.dataLocationBullet}>• Gegevens blijven privé op jouw apparaat</Text>
-          <Text style={styles.dataLocationBullet}>• Meerdere accounts mogelijk op hetzelfde apparaat</Text>
-          <Text style={styles.dataLocationBullet}>• Accounts zijn APPARAAT-SPECIFIEK (iOS ≠ Android)</Text>
-          <Text style={styles.dataLocationBullet}>• Geen cloud synchronisatie tussen apparaten</Text>
-          <Text style={styles.dataLocationBullet}>• Bij app verwijdering gaan gegevens verloren</Text>
-          <Text style={styles.dataLocationBullet}>• Maak regelmatig een export via &apos;Gegevens Exporteren&apos;</Text>
+          <Text style={styles.dataLocationBullet}>• Gegevens zijn gesynchroniseerd tussen al je apparaten</Text>
+          <Text style={styles.dataLocationBullet}>• Toegang vanaf iOS, Android en web</Text>
+          <Text style={styles.dataLocationBullet}>• Automatische back-ups en beveiliging</Text>
+          <Text style={styles.dataLocationBullet}>• Geen gegevensverlies bij app verwijdering</Text>
+          <Text style={styles.dataLocationBullet}>• Inloggen met hetzelfde account op elk apparaat</Text>
+          <Text style={styles.dataLocationBullet}>• Export functie beschikbaar voor eigen back-ups</Text>
           
           <Text style={styles.dataLocationRestore}>
-            💡 Gegevens kwijt? Stuur je export bestand (.txt) naar info@mybird.app voor herstel.
+            🔒 Je gegevens zijn beveiligd met Row Level Security en alleen toegankelijk voor jou.
           </Text>
         </View>
         

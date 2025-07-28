@@ -34,8 +34,7 @@ export default function AddCoupleScreen() {
     setIsSubmitting(true);
     
     try {
-      const newCouple: Couple = {
-        id: Date.now().toString(),
+      const newCouple: Omit<Couple, 'id' | 'createdAt'> = {
         maleId: selectedMaleId,
         femaleId: selectedFemaleId,
         season,
