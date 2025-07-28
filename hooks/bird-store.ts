@@ -49,8 +49,8 @@ const getCouples = async (userId: string): Promise<Couple[]> => {
     .from('couples')
     .select(`
       *,
-      male_bird:birds!couples_male_bird_id_fkey(id, name),
-      female_bird:birds!couples_female_bird_id_fkey(id, name)
+      male_bird:birds!male_bird_id(id, name),
+      female_bird:birds!female_bird_id(id, name)
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
@@ -113,8 +113,8 @@ const getNests = async (userId: string): Promise<Nest[]> => {
     .from('nests')
     .select(`
       *,
-      couple:couples(id, male_bird_id, female_bird_id),
-      aviary:aviaries(id, name)
+      couple:couples!couple_id(id, male_bird_id, female_bird_id),
+      aviary:aviaries!aviary_id(id, name)
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
