@@ -22,11 +22,12 @@ const getBirds = async (userId: string): Promise<Bird[]> => {
     name: bird.name,
     species: bird.species,
     gender: bird.gender,
-    birthDate: bird.birth_date ? new Date(bird.birth_date) : undefined,
-    ringNumber: bird.ring_number || undefined,
-    color: bird.color || undefined,
+    birthDate: bird.birth_date ? new Date(bird.birth_date) : new Date(),
+    ringNumber: bird.ring_number || '',
+    colorMutation: bird.color || undefined,
     notes: bird.notes || undefined,
-    imageUrl: bird.image_url || undefined,
+    imageUri: bird.image_url || undefined,
+    origin: 'purchased' as const,
     status: 'active' as const,
     aviaryId: undefined, // Will be handled by aviary relationships
     fatherId: undefined, // Will be handled by breeding records
@@ -77,9 +78,10 @@ const getAviaries = async (userId: string): Promise<Aviary[]> => {
   return (data || []).map(aviary => ({
     id: aviary.id,
     name: aviary.name,
-    description: aviary.description || undefined,
+    location: aviary.location || '',
     capacity: aviary.capacity,
-    location: aviary.location || undefined,
+    notes: aviary.notes || undefined,
+    description: aviary.description || undefined,
     createdAt: new Date(aviary.created_at),
   }));
 };
@@ -146,9 +148,9 @@ export const [BirdStoreProvider, useBirdStore] = createContextHook(() => {
           gender: bird.gender,
           birth_date: bird.birthDate?.toISOString().split('T')[0] || null,
           ring_number: bird.ringNumber || null,
-          color: bird.color || null,
+          color: bird.colorMutation || null,
           notes: bird.notes || null,
-          image_url: bird.imageUrl || null,
+          image_url: bird.imageUri || null,
         })
         .select()
         .single();
@@ -173,9 +175,9 @@ export const [BirdStoreProvider, useBirdStore] = createContextHook(() => {
           gender: bird.gender,
           birth_date: bird.birthDate?.toISOString().split('T')[0] || null,
           ring_number: bird.ringNumber || null,
-          color: bird.color || null,
+          color: bird.colorMutation || null,
           notes: bird.notes || null,
-          image_url: bird.imageUrl || null,
+          image_url: bird.imageUri || null,
         })
         .eq('id', bird.id)
         .eq('user_id', userId)
@@ -319,8 +321,8 @@ export const [BirdStoreProvider, useBirdStore] = createContextHook(() => {
           start_date: nest.startDate.toISOString().split('T')[0],
           expected_hatch_date: nest.expectedHatchDate?.toISOString().split('T')[0] || null,
           actual_hatch_date: nest.actualHatchDate?.toISOString().split('T')[0] || null,
-          egg_count: nest.eggCount,
-          hatched_count: nest.hatchedCount,
+          egg_count: nest.eggCount || 0,
+          hatched_count: nest.hatchedCount || 0,
           status: nest.active ? 'preparing' : 'completed',
           notes: nest.notes || null,
         })
@@ -347,8 +349,8 @@ export const [BirdStoreProvider, useBirdStore] = createContextHook(() => {
           start_date: nest.startDate.toISOString().split('T')[0],
           expected_hatch_date: nest.expectedHatchDate?.toISOString().split('T')[0] || null,
           actual_hatch_date: nest.actualHatchDate?.toISOString().split('T')[0] || null,
-          egg_count: nest.eggCount,
-          hatched_count: nest.hatchedCount,
+          egg_count: nest.eggCount || 0,
+          hatched_count: nest.hatchedCount || 0,
           status: nest.active ? 'preparing' : 'completed',
           notes: nest.notes || null,
         })
