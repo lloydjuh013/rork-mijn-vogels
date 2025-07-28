@@ -20,6 +20,7 @@ const getBirds = async (userId: string): Promise<Bird[]> => {
       hint: error.hint,
       code: error.code
     });
+    console.error('Full birds error:', error);
 
     throw error;
   }
@@ -62,6 +63,7 @@ const getCouples = async (userId: string): Promise<Couple[]> => {
       hint: error.hint,
       code: error.code
     });
+    console.error('Full couples error:', error);
     throw error;
   }
 
@@ -91,6 +93,7 @@ const getAviaries = async (userId: string): Promise<Aviary[]> => {
       hint: error.hint,
       code: error.code
     });
+    console.error('Full aviaries error:', error);
     throw error;
   }
 
@@ -124,6 +127,7 @@ const getNests = async (userId: string): Promise<Nest[]> => {
       hint: error.hint,
       code: error.code
     });
+    console.error('Full nests error:', error);
 
     throw error;
   }

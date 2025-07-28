@@ -72,13 +72,14 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
 
     if (insertError) {
       console.error('Error creating profile:', insertError.message);
-      console.error('Full error object:', JSON.stringify(insertError, null, 2));
-      console.error('Error details:', {
+      console.error('Full error object:', {
         message: insertError.message,
         details: insertError.details,
         hint: insertError.hint,
-        code: insertError.code
+        code: insertError.code,
+        stack: insertError.stack
       });
+      console.error('Error details:', insertError);
       
       // Check if the error is due to duplicate key (profile already exists from trigger)
       if (insertError.code === '23505' || insertError.message?.includes('duplicate key')) {
@@ -108,8 +109,10 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
             message: fetchError.message,
             details: fetchError.details,
             hint: fetchError.hint,
-            code: fetchError.code
+            code: fetchError.code,
+            stack: fetchError.stack
           });
+          console.error('Full fetch error:', fetchError);
         }
       }
       
@@ -216,7 +219,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       });
 
       if (authError) {
-        console.error('Supabase auth error:', authError);
+        console.error('Supabase auth error:', {
+          message: authError.message,
+          status: authError.status,
+          statusText: authError.statusText
+        });
+        console.error('Full auth error:', authError);
         
         // Handle rate limiting
         if (authError.message.includes('For security purposes, you can only request this after')) {
@@ -274,7 +282,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       });
 
       if (authError) {
-        console.error('Supabase auth error:', authError);
+        console.error('Supabase auth error:', {
+          message: authError.message,
+          status: authError.status,
+          statusText: authError.statusText
+        });
+        console.error('Full auth error:', authError);
         
         // Handle rate limiting
         if (authError.message.includes('For security purposes, you can only request this after')) {
