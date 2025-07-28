@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, Switch, ScrollView, Alert, TouchableOpacity, Sh
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { HelpCircle, Trash2, Download, Upload, Bell, TreePine, Mail, Globe, LogOut } from 'lucide-react-native';
+import { HelpCircle, Trash2, Download, Upload, Bell, TreePine, Mail, Globe, LogOut, Database } from 'lucide-react-native';
 
 import Colors from '@/constants/colors';
 import Button from '@/components/Button';
@@ -357,6 +357,15 @@ export default function SettingsScreen() {
             🔒 Je gegevens zijn beveiligd met Row Level Security en alleen toegankelijk voor jou.
           </Text>
         </View>
+        
+        <TouchableOpacity 
+          style={styles.helpButton} 
+          onPress={() => router.push('/diagnostics')} 
+          testID="diagnostics-button"
+        >
+          <Database size={20} color={Colors.primary} />
+          <Text style={styles.helpButtonText}>Database Diagnostics</Text>
+        </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.helpButton} 
