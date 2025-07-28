@@ -1,11 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-// Get environment variables
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+// Get environment variables with fallback
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || Constants.expoConfig?.extra?.supabaseUrl || 'https://ywzoxzkwakmiaykbkevk.supabase.co';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || Constants.expoConfig?.extra?.supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3em94emt3YWttaWF5a2JrZXZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2NDk3NTAsImV4cCI6MjA2OTIyNTc1MH0.uHs54k3fVylJu_TI6WfmTtZnhuV1eH0RQvXFhxyKLaI';
+
+console.log('Supabase URL:', supabaseUrl);
+console.log('Supabase Key exists:', !!supabaseAnonKey);
 
 if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Environment variables:', {
+    EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ? 'exists' : 'missing'
+  });
   throw new Error('Missing Supabase environment variables. Please add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to your environment.');
 }
 
