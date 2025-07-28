@@ -16,10 +16,25 @@ function RootLayoutNav() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [forceShowApp, setForceShowApp] = useState(false);
+
+  // Fallback timeout to prevent infinite loading
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      console.log('Auth loading timeout - forcing app to show');
+      setForceShowApp(true);
+      if (!hasInitialized) {
+        setHasInitialized(true);
+        router.replace('/auth/register');
+      }
+    }, 15000); // 15 second fallback
+
+    return () => clearTimeout(fallbackTimer);
+  }, [hasInitialized, router]);
 
   // Only redirect once after initial load
   useEffect(() => {
-    if (!isLoading && !hasInitialized) {
+    if ((!isLoading || forceShowApp) && !hasInitialized) {
       setHasInitialized(true);
       
       if (!isAuthenticated) {
@@ -30,9 +45,9 @@ function RootLayoutNav() {
         router.replace('/(tabs)');
       }
     }
-  }, [isLoading, isAuthenticated, router, hasInitialized]);
+  }, [isLoading, isAuthenticated, router, hasInitialized, forceShowApp]);
 
-  if (isLoading || !hasInitialized) {
+  if ((isLoading && !forceShowApp) || !hasInitialized) {
     return null; // Show nothing while checking auth
   }
 

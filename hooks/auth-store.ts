@@ -180,13 +180,31 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
 // Get current authenticated user
 const getCurrentUser = async (): Promise<User | null> => {
   try {
-    const { data: { user: supabaseUser }, error } = await supabase.auth.getUser();
+    console.log('Getting current user...');
     
-    if (error || !supabaseUser) {
+    // Add timeout to prevent infinite loading
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Auth timeout')), 10000); // 10 second timeout
+    });
+    
+    const authPromise = supabase.auth.getUser();
+    
+    const { data: { user: supabaseUser }, error } = await Promise.race([
+      authPromise,
+      timeoutPromise
+    ]);
+    
+    if (error) {
+      console.log('Auth error:', error.message);
+      return null;
+    }
+    
+    if (!supabaseUser) {
       console.log('No authenticated user found');
       return null;
     }
 
+    console.log('Found authenticated user:', supabaseUser.email);
     return await convertSupabaseUser(supabaseUser);
   } catch (error) {
     console.error('Error getting current user:', error);
