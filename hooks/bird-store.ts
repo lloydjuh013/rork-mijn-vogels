@@ -1,32 +1,118 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
-import { useState, useEffect } from 'react';
 import { Bird, HealthRecord, Couple, Nest, Egg, Aviary, User } from '@/types/bird';
 import { useAuth } from '@/hooks/auth-store';
+import { supabase } from '@/utils/supabase';
 
-// Storage keys - now email-based
-const getStorageKey = (email: string, type: string) => `mijn_vogels_${email}_${type}`;
+// Helper functions for Supabase operations
+const getBirds = async (userId: string): Promise<Bird[]> => {
+  const { data, error } = await supabase
+    .from('birds')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
 
-// Helper functions for email-based storage
-const getStoredData = async <T>(email: string, type: string): Promise<T[]> => {
-  try {
-    const key = getStorageKey(email, type);
-    const data = await AsyncStorage.getItem(key);
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error(`Error retrieving ${type} for ${email}:`, error);
-    return [];
+  if (error) {
+    console.error('Error fetching birds:', error);
+    throw error;
   }
+
+  return (data || []).map(bird => ({
+    id: bird.id,
+    name: bird.name,
+    species: bird.species,
+    gender: bird.gender,
+    birthDate: bird.birth_date ? new Date(bird.birth_date) : undefined,
+    ringNumber: bird.ring_number || undefined,
+    color: bird.color || undefined,
+    notes: bird.notes || undefined,
+    imageUrl: bird.image_url || undefined,
+    status: 'active' as const,
+    aviaryId: undefined, // Will be handled by aviary relationships
+    fatherId: undefined, // Will be handled by breeding records
+    motherId: undefined, // Will be handled by breeding records
+    createdAt: new Date(bird.created_at),
+  }));
 };
 
-const storeData = async <T>(email: string, type: string, data: T[]): Promise<void> => {
-  try {
-    const key = getStorageKey(email, type);
-    await AsyncStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.error(`Error storing ${type} for ${email}:`, error);
+const getCouples = async (userId: string): Promise<Couple[]> => {
+  const { data, error } = await supabase
+    .from('couples')
+    .select(`
+      *,
+      male_bird:birds!couples_male_bird_id_fkey(id, name),
+      female_bird:birds!couples_female_bird_id_fkey(id, name)
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching couples:', error);
+    throw error;
   }
+
+  return (data || []).map(couple => ({
+    id: couple.id,
+    maleBirdId: couple.male_bird_id,
+    femaleBirdId: couple.female_bird_id,
+    pairDate: new Date(couple.pair_date),
+    active: couple.status === 'active',
+    notes: couple.notes || undefined,
+    createdAt: new Date(couple.created_at),
+  }));
+};
+
+const getAviaries = async (userId: string): Promise<Aviary[]> => {
+  const { data, error } = await supabase
+    .from('aviaries')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching aviaries:', error);
+    throw error;
+  }
+
+  return (data || []).map(aviary => ({
+    id: aviary.id,
+    name: aviary.name,
+    description: aviary.description || undefined,
+    capacity: aviary.capacity,
+    location: aviary.location || undefined,
+    createdAt: new Date(aviary.created_at),
+  }));
+};
+
+const getNests = async (userId: string): Promise<Nest[]> => {
+  const { data, error } = await supabase
+    .from('nests')
+    .select(`
+      *,
+      couple:couples(id, male_bird_id, female_bird_id),
+      aviary:aviaries(id, name)
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching nests:', error);
+    throw error;
+  }
+
+  return (data || []).map(nest => ({
+    id: nest.id,
+    coupleId: nest.couple_id,
+    aviaryId: nest.aviary_id || undefined,
+    startDate: new Date(nest.start_date),
+    expectedHatchDate: nest.expected_hatch_date ? new Date(nest.expected_hatch_date) : undefined,
+    actualHatchDate: nest.actual_hatch_date ? new Date(nest.actual_hatch_date) : undefined,
+    eggCount: nest.egg_count,
+    hatchedCount: nest.hatched_count,
+    active: nest.status !== 'completed' && nest.status !== 'abandoned',
+    notes: nest.notes || undefined,
+    createdAt: new Date(nest.created_at),
+  }));
 };
 
 // Create the context hook
@@ -35,240 +121,436 @@ export const [BirdStoreProvider, useBirdStore] = createContextHook(() => {
   const { user } = useAuth();
   
   // Don't load data if no user is authenticated
-  const userEmail = user?.email;
+  const userId = user?.id;
 
   // Birds
   const birdsQuery = useQuery({
-    queryKey: ['birds', userEmail],
+    queryKey: ['birds', userId],
     queryFn: async () => {
-      if (!userEmail) return [];
-      return getStoredData<Bird>(userEmail, 'birds');
+      if (!userId) return [];
+      return getBirds(userId);
     },
-    enabled: !!userEmail
+    enabled: !!userId
   });
 
-  const saveBirdsMutation = useMutation({
-    mutationFn: async (birds: Bird[]) => {
-      if (!userEmail) throw new Error('No user authenticated');
-      await storeData(userEmail, 'birds', birds);
-      return birds;
+  const addBirdMutation = useMutation({
+    mutationFn: async (bird: Omit<Bird, 'id' | 'createdAt'>) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { data, error } = await supabase
+        .from('birds')
+        .insert({
+          user_id: userId,
+          name: bird.name,
+          species: bird.species,
+          gender: bird.gender,
+          birth_date: bird.birthDate?.toISOString().split('T')[0] || null,
+          ring_number: bird.ringNumber || null,
+          color: bird.color || null,
+          notes: bird.notes || null,
+          image_url: bird.imageUrl || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     },
-    onSuccess: (birds) => {
-      queryClient.setQueryData(['birds', userEmail], birds);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['birds', userId] });
     }
   });
 
-  // Health Records
+  const updateBirdMutation = useMutation({
+    mutationFn: async (bird: Bird) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { data, error } = await supabase
+        .from('birds')
+        .update({
+          name: bird.name,
+          species: bird.species,
+          gender: bird.gender,
+          birth_date: bird.birthDate?.toISOString().split('T')[0] || null,
+          ring_number: bird.ringNumber || null,
+          color: bird.color || null,
+          notes: bird.notes || null,
+          image_url: bird.imageUrl || null,
+        })
+        .eq('id', bird.id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['birds', userId] });
+    }
+  });
+
+  const deleteBirdMutation = useMutation({
+    mutationFn: async (birdId: string) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { error } = await supabase
+        .from('birds')
+        .delete()
+        .eq('id', birdId)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['birds', userId] });
+    }
+  });
+
+  // Health Records (simplified for now - can be expanded later)
   const healthRecordsQuery = useQuery({
-    queryKey: ['healthRecords', userEmail],
+    queryKey: ['healthRecords', userId],
     queryFn: async () => {
-      if (!userEmail) return [];
-      return getStoredData<HealthRecord>(userEmail, 'health_records');
+      if (!userId) return [];
+      // For now, return empty array - health records can be added later
+      return [] as HealthRecord[];
     },
-    enabled: !!userEmail
-  });
-
-  const saveHealthRecordsMutation = useMutation({
-    mutationFn: async (records: HealthRecord[]) => {
-      if (!userEmail) throw new Error('No user authenticated');
-      await storeData(userEmail, 'health_records', records);
-      return records;
-    },
-    onSuccess: (records) => {
-      queryClient.setQueryData(['healthRecords', userEmail], records);
-    }
+    enabled: !!userId
   });
 
   // Couples
   const couplesQuery = useQuery({
-    queryKey: ['couples', userEmail],
+    queryKey: ['couples', userId],
     queryFn: async () => {
-      if (!userEmail) return [];
-      return getStoredData<Couple>(userEmail, 'couples');
+      if (!userId) return [];
+      return getCouples(userId);
     },
-    enabled: !!userEmail
+    enabled: !!userId
   });
 
-  const saveCouplesMutation = useMutation({
-    mutationFn: async (couples: Couple[]) => {
-      if (!userEmail) throw new Error('No user authenticated');
-      await storeData(userEmail, 'couples', couples);
-      return couples;
+  const addCoupleMutation = useMutation({
+    mutationFn: async (couple: Omit<Couple, 'id' | 'createdAt'>) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { data, error } = await supabase
+        .from('couples')
+        .insert({
+          user_id: userId,
+          male_bird_id: couple.maleBirdId,
+          female_bird_id: couple.femaleBirdId,
+          pair_date: couple.pairDate.toISOString().split('T')[0],
+          status: couple.active ? 'active' : 'inactive',
+          notes: couple.notes || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     },
-    onSuccess: (couples) => {
-      queryClient.setQueryData(['couples', userEmail], couples);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['couples', userId] });
+    }
+  });
+
+  const updateCoupleMutation = useMutation({
+    mutationFn: async (couple: Couple) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { data, error } = await supabase
+        .from('couples')
+        .update({
+          male_bird_id: couple.maleBirdId,
+          female_bird_id: couple.femaleBirdId,
+          pair_date: couple.pairDate.toISOString().split('T')[0],
+          status: couple.active ? 'active' : 'inactive',
+          notes: couple.notes || null,
+        })
+        .eq('id', couple.id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['couples', userId] });
+    }
+  });
+
+  const deleteCoupleMutation = useMutation({
+    mutationFn: async (coupleId: string) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { error } = await supabase
+        .from('couples')
+        .delete()
+        .eq('id', coupleId)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['couples', userId] });
     }
   });
 
   // Nests
   const nestsQuery = useQuery({
-    queryKey: ['nests', userEmail],
+    queryKey: ['nests', userId],
     queryFn: async () => {
-      if (!userEmail) return [];
-      return getStoredData<Nest>(userEmail, 'nests');
+      if (!userId) return [];
+      return getNests(userId);
     },
-    enabled: !!userEmail
+    enabled: !!userId
   });
 
-  const saveNestsMutation = useMutation({
-    mutationFn: async (nests: Nest[]) => {
-      if (!userEmail) throw new Error('No user authenticated');
-      await storeData(userEmail, 'nests', nests);
-      return nests;
+  const addNestMutation = useMutation({
+    mutationFn: async (nest: Omit<Nest, 'id' | 'createdAt'>) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { data, error } = await supabase
+        .from('nests')
+        .insert({
+          user_id: userId,
+          couple_id: nest.coupleId,
+          aviary_id: nest.aviaryId || null,
+          start_date: nest.startDate.toISOString().split('T')[0],
+          expected_hatch_date: nest.expectedHatchDate?.toISOString().split('T')[0] || null,
+          actual_hatch_date: nest.actualHatchDate?.toISOString().split('T')[0] || null,
+          egg_count: nest.eggCount,
+          hatched_count: nest.hatchedCount,
+          status: nest.active ? 'preparing' : 'completed',
+          notes: nest.notes || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     },
-    onSuccess: (nests) => {
-      queryClient.setQueryData(['nests', userEmail], nests);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nests', userId] });
     }
   });
 
-  // Eggs
+  const updateNestMutation = useMutation({
+    mutationFn: async (nest: Nest) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { data, error } = await supabase
+        .from('nests')
+        .update({
+          couple_id: nest.coupleId,
+          aviary_id: nest.aviaryId || null,
+          start_date: nest.startDate.toISOString().split('T')[0],
+          expected_hatch_date: nest.expectedHatchDate?.toISOString().split('T')[0] || null,
+          actual_hatch_date: nest.actualHatchDate?.toISOString().split('T')[0] || null,
+          egg_count: nest.eggCount,
+          hatched_count: nest.hatchedCount,
+          status: nest.active ? 'preparing' : 'completed',
+          notes: nest.notes || null,
+        })
+        .eq('id', nest.id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nests', userId] });
+    }
+  });
+
+  const deleteNestMutation = useMutation({
+    mutationFn: async (nestId: string) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { error } = await supabase
+        .from('nests')
+        .delete()
+        .eq('id', nestId)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nests', userId] });
+    }
+  });
+
+  // Eggs (simplified for now - can be expanded later)
   const eggsQuery = useQuery({
-    queryKey: ['eggs', userEmail],
+    queryKey: ['eggs', userId],
     queryFn: async () => {
-      if (!userEmail) return [];
-      return getStoredData<Egg>(userEmail, 'eggs');
+      if (!userId) return [];
+      // For now, return empty array - eggs can be added later
+      return [] as Egg[];
     },
-    enabled: !!userEmail
-  });
-
-  const saveEggsMutation = useMutation({
-    mutationFn: async (eggs: Egg[]) => {
-      if (!userEmail) throw new Error('No user authenticated');
-      await storeData(userEmail, 'eggs', eggs);
-      return eggs;
-    },
-    onSuccess: (eggs) => {
-      queryClient.setQueryData(['eggs', userEmail], eggs);
-    }
+    enabled: !!userId
   });
 
   // Aviaries
   const aviariesQuery = useQuery({
-    queryKey: ['aviaries', userEmail],
+    queryKey: ['aviaries', userId],
     queryFn: async () => {
-      if (!userEmail) return [];
-      return getStoredData<Aviary>(userEmail, 'aviaries');
+      if (!userId) return [];
+      return getAviaries(userId);
     },
-    enabled: !!userEmail
+    enabled: !!userId
   });
 
-  const saveAviariesMutation = useMutation({
-    mutationFn: async (aviaries: Aviary[]) => {
-      if (!userEmail) throw new Error('No user authenticated');
-      await storeData(userEmail, 'aviaries', aviaries);
-      return aviaries;
+  const addAviaryMutation = useMutation({
+    mutationFn: async (aviary: Omit<Aviary, 'id' | 'createdAt'>) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { data, error } = await supabase
+        .from('aviaries')
+        .insert({
+          user_id: userId,
+          name: aviary.name,
+          description: aviary.description || null,
+          capacity: aviary.capacity,
+          location: aviary.location || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     },
-    onSuccess: (aviaries) => {
-      queryClient.setQueryData(['aviaries', userEmail], aviaries);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['aviaries', userId] });
+    }
+  });
+
+  const updateAviaryMutation = useMutation({
+    mutationFn: async (aviary: Aviary) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { data, error } = await supabase
+        .from('aviaries')
+        .update({
+          name: aviary.name,
+          description: aviary.description || null,
+          capacity: aviary.capacity,
+          location: aviary.location || null,
+        })
+        .eq('id', aviary.id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['aviaries', userId] });
+    }
+  });
+
+  const deleteAviaryMutation = useMutation({
+    mutationFn: async (aviaryId: string) => {
+      if (!userId) throw new Error('No user authenticated');
+      
+      const { error } = await supabase
+        .from('aviaries')
+        .delete()
+        .eq('id', aviaryId)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['aviaries', userId] });
     }
   });
 
   // CRUD operations for birds
-  const addBird = (bird: Bird) => {
-    const birds = [...(birdsQuery.data || []), bird];
-    saveBirdsMutation.mutate(birds);
+  const addBird = (bird: Omit<Bird, 'id' | 'createdAt'>) => {
+    addBirdMutation.mutate(bird);
   };
 
-  const updateBird = (updatedBird: Bird) => {
-    const birds = (birdsQuery.data || []).map(bird => 
-      bird.id === updatedBird.id ? updatedBird : bird
-    );
-    saveBirdsMutation.mutate(birds);
+  const updateBird = (bird: Bird) => {
+    updateBirdMutation.mutate(bird);
   };
 
   const deleteBird = (id: string) => {
-    const birds = (birdsQuery.data || []).filter(bird => bird.id !== id);
-    saveBirdsMutation.mutate(birds);
+    deleteBirdMutation.mutate(id);
   };
 
-  // CRUD operations for health records
+  // CRUD operations for health records (simplified)
   const addHealthRecord = (record: HealthRecord) => {
-    const records = [...(healthRecordsQuery.data || []), record];
-    saveHealthRecordsMutation.mutate(records);
+    // TODO: Implement when health records table is added
+    console.log('Health records not yet implemented with Supabase');
   };
 
-  const updateHealthRecord = (updatedRecord: HealthRecord) => {
-    const records = (healthRecordsQuery.data || []).map(record => 
-      record.id === updatedRecord.id ? updatedRecord : record
-    );
-    saveHealthRecordsMutation.mutate(records);
+  const updateHealthRecord = (record: HealthRecord) => {
+    // TODO: Implement when health records table is added
+    console.log('Health records not yet implemented with Supabase');
   };
 
   const deleteHealthRecord = (id: string) => {
-    const records = (healthRecordsQuery.data || []).filter(record => record.id !== id);
-    saveHealthRecordsMutation.mutate(records);
+    // TODO: Implement when health records table is added
+    console.log('Health records not yet implemented with Supabase');
   };
 
   // CRUD operations for couples
-  const addCouple = (couple: Couple) => {
-    const couples = [...(couplesQuery.data || []), couple];
-    saveCouplesMutation.mutate(couples);
+  const addCouple = (couple: Omit<Couple, 'id' | 'createdAt'>) => {
+    addCoupleMutation.mutate(couple);
   };
 
-  const updateCouple = (updatedCouple: Couple) => {
-    const couples = (couplesQuery.data || []).map(couple => 
-      couple.id === updatedCouple.id ? updatedCouple : couple
-    );
-    saveCouplesMutation.mutate(couples);
+  const updateCouple = (couple: Couple) => {
+    updateCoupleMutation.mutate(couple);
   };
 
   const deleteCouple = (id: string) => {
-    const couples = (couplesQuery.data || []).filter(couple => couple.id !== id);
-    saveCouplesMutation.mutate(couples);
+    deleteCoupleMutation.mutate(id);
   };
 
   // CRUD operations for nests
-  const addNest = (nest: Nest) => {
-    const nests = [...(nestsQuery.data || []), nest];
-    saveNestsMutation.mutate(nests);
+  const addNest = (nest: Omit<Nest, 'id' | 'createdAt'>) => {
+    addNestMutation.mutate(nest);
   };
 
-  const updateNest = (updatedNest: Nest) => {
-    const nests = (nestsQuery.data || []).map(nest => 
-      nest.id === updatedNest.id ? updatedNest : nest
-    );
-    saveNestsMutation.mutate(nests);
+  const updateNest = (nest: Nest) => {
+    updateNestMutation.mutate(nest);
   };
 
   const deleteNest = (id: string) => {
-    const nests = (nestsQuery.data || []).filter(nest => nest.id !== id);
-    saveNestsMutation.mutate(nests);
+    deleteNestMutation.mutate(id);
   };
 
-  // CRUD operations for eggs
+  // CRUD operations for eggs (simplified)
   const addEgg = (egg: Egg) => {
-    const eggs = [...(eggsQuery.data || []), egg];
-    saveEggsMutation.mutate(eggs);
+    // TODO: Implement when eggs table is added
+    console.log('Eggs not yet implemented with Supabase');
   };
 
-  const updateEgg = (updatedEgg: Egg) => {
-    const eggs = (eggsQuery.data || []).map(egg => 
-      egg.id === updatedEgg.id ? updatedEgg : egg
-    );
-    saveEggsMutation.mutate(eggs);
+  const updateEgg = (egg: Egg) => {
+    // TODO: Implement when eggs table is added
+    console.log('Eggs not yet implemented with Supabase');
   };
 
   const deleteEgg = (id: string) => {
-    const eggs = (eggsQuery.data || []).filter(egg => egg.id !== id);
-    saveEggsMutation.mutate(eggs);
+    // TODO: Implement when eggs table is added
+    console.log('Eggs not yet implemented with Supabase');
   };
 
   // CRUD operations for aviaries
-  const addAviary = (aviary: Aviary) => {
-    const aviaries = [...(aviariesQuery.data || []), aviary];
-    saveAviariesMutation.mutate(aviaries);
+  const addAviary = (aviary: Omit<Aviary, 'id' | 'createdAt'>) => {
+    addAviaryMutation.mutate(aviary);
   };
 
-  const updateAviary = (updatedAviary: Aviary) => {
-    const aviaries = (aviariesQuery.data || []).map(aviary => 
-      aviary.id === updatedAviary.id ? updatedAviary : aviary
-    );
-    saveAviariesMutation.mutate(aviaries);
+  const updateAviary = (aviary: Aviary) => {
+    updateAviaryMutation.mutate(aviary);
   };
 
   const deleteAviary = (id: string) => {
-    const aviaries = (aviariesQuery.data || []).filter(aviary => aviary.id !== id);
-    saveAviariesMutation.mutate(aviaries);
+    deleteAviaryMutation.mutate(id);
   };
 
   // Statistics

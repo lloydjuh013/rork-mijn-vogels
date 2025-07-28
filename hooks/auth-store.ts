@@ -1,10 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
 import { User } from '@/types/bird';
-
-const USERS_STORAGE_KEY = 'mijn_vogels_users'; // Store all users
-const CURRENT_USER_EMAIL_KEY = 'mijn_vogels_current_user_email';
+import { supabase } from '@/utils/supabase';
+import type { AuthError, User as SupabaseUser } from '@supabase/supabase-js';
 
 type AuthState = {
   user: User | null;
@@ -23,77 +21,64 @@ type RegisterData = {
   name: string;
 };
 
-// Helper functions for email-based storage
-const getAllUsers = async (): Promise<Record<string, User>> => {
-  try {
-    const usersData = await AsyncStorage.getItem(USERS_STORAGE_KEY);
-    return usersData ? JSON.parse(usersData) : {};
-  } catch (error) {
-    console.error('Error retrieving users:', error);
-    return {};
+// Helper function to convert Supabase user to our User type
+const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> => {
+  // Get user profile from profiles table
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', supabaseUser.id)
+    .single();
+
+  if (error || !profile) {
+    // If no profile exists, create one
+    const newProfile = {
+      id: supabaseUser.id,
+      email: supabaseUser.email || '',
+      name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'Gebruiker',
+    };
+
+    const { error: insertError } = await supabase
+      .from('profiles')
+      .insert(newProfile);
+
+    if (insertError) {
+      console.error('Error creating profile:', insertError);
+    }
+
+    return {
+      id: newProfile.id,
+      email: newProfile.email,
+      name: newProfile.name,
+      createdAt: new Date(supabaseUser.created_at),
+      isActive: true,
+    };
   }
+
+  return {
+    id: profile.id,
+    email: profile.email,
+    name: profile.name,
+    createdAt: new Date(profile.created_at),
+    isActive: true,
+  };
 };
 
-const getCurrentUserEmail = async (): Promise<string | null> => {
-  try {
-    return await AsyncStorage.getItem(CURRENT_USER_EMAIL_KEY);
-  } catch (error) {
-    console.error('Error retrieving current user email:', error);
-    return null;
-  }
-};
-
+// Get current authenticated user
 const getCurrentUser = async (): Promise<User | null> => {
   try {
-    const currentEmail = await getCurrentUserEmail();
-    if (!currentEmail) return null;
+    const { data: { user: supabaseUser }, error } = await supabase.auth.getUser();
     
-    const allUsers = await getAllUsers();
-    return allUsers[currentEmail] || null;
+    if (error || !supabaseUser) {
+      console.log('No authenticated user found');
+      return null;
+    }
+
+    return await convertSupabaseUser(supabaseUser);
   } catch (error) {
-    console.error('Error retrieving current user:', error);
+    console.error('Error getting current user:', error);
     return null;
   }
-};
-
-const storeUser = async (user: User): Promise<void> => {
-  try {
-    const allUsers = await getAllUsers();
-    allUsers[user.email] = user;
-    await AsyncStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(allUsers));
-  } catch (error) {
-    console.error('Error storing user:', error);
-  }
-};
-
-const setCurrentUser = async (email: string): Promise<void> => {
-  try {
-    await AsyncStorage.setItem(CURRENT_USER_EMAIL_KEY, email);
-  } catch (error) {
-    console.error('Error setting current user:', error);
-  }
-};
-
-const clearCurrentUser = async (): Promise<void> => {
-  try {
-    await AsyncStorage.removeItem(CURRENT_USER_EMAIL_KEY);
-  } catch (error) {
-    console.error('Error clearing current user:', error);
-  }
-};
-
-const getUserByEmail = async (email: string): Promise<User | null> => {
-  try {
-    const allUsers = await getAllUsers();
-    return allUsers[email] || null;
-  } catch (error) {
-    console.error('Error getting user by email:', error);
-    return null;
-  }
-};
-
-const generateUserId = (): string => {
-  return Date.now().toString() + Math.random().toString(36).substr(2, 9);
 };
 
 
@@ -108,14 +93,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const userQuery = useQuery({
     queryKey: ['currentUser'],
     queryFn: getCurrentUser,
-    staleTime: Infinity,
-  });
-
-  // Current user email query
-  const currentEmailQuery = useQuery({
-    queryKey: ['currentUserEmail'],
-    queryFn: getCurrentUserEmail,
-    staleTime: Infinity,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
   });
 
   // Register mutation
@@ -123,45 +102,41 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     mutationFn: async (data: RegisterData): Promise<User> => {
       console.log('Starting registration for:', data.email);
       
-      // Normalize email to lowercase
       const normalizedEmail = data.email.trim().toLowerCase();
-      console.log('Normalized email:', normalizedEmail);
       
-      // Check if user already exists
-      const existingUser = await getUserByEmail(normalizedEmail);
-      if (existingUser) {
-        throw new Error('Er bestaat al een account met dit e-mailadres');
+      // Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password: data.password,
+        options: {
+          data: {
+            name: data.name,
+          },
+        },
+      });
+
+      if (authError) {
+        console.error('Supabase auth error:', authError);
+        if (authError.message.includes('already registered')) {
+          throw new Error('Er bestaat al een account met dit e-mailadres');
+        }
+        throw new Error(authError.message);
       }
-      
-      const now = new Date();
-      const user: User = {
-        id: generateUserId(),
-        email: normalizedEmail, // Use normalized email
-        name: data.name,
-        createdAt: now,
-        isActive: true,
-      };
 
-      console.log('Created user:', user);
+      if (!authData.user) {
+        throw new Error('Registratie mislukt - geen gebruiker ontvangen');
+      }
 
-      // Store user and set as current
-      await storeUser(user);
-      await setCurrentUser(user.email);
-      
-      console.log('User stored successfully');
-      
-      // Verify storage
-      const allUsers = await getAllUsers();
-      console.log('All users after registration:', Object.keys(allUsers));
+      // Convert to our User type
+      const user = await convertSupabaseUser(authData.user);
+      console.log('Registration successful:', user);
       
       return user;
     },
     onSuccess: (user) => {
       console.log('Registration successful, updating queries');
       queryClient.setQueryData(['currentUser'], user);
-      queryClient.setQueryData(['currentUserEmail'], user.email);
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      queryClient.invalidateQueries({ queryKey: ['currentUserEmail'] });
     },
     onError: (error) => {
       console.error('Registration failed:', error);
@@ -173,57 +148,39 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     mutationFn: async (data: LoginData): Promise<User> => {
       console.log('Starting login for:', data.email);
       
-      // Normalize email to lowercase (same as registration)
       const normalizedEmail = data.email.trim().toLowerCase();
-      console.log('Normalized email for login:', normalizedEmail);
       
-      // Debug: Check all stored users
-      const allUsers = await getAllUsers();
-      console.log('All stored users:', Object.keys(allUsers));
-      console.log('Total users in storage:', Object.keys(allUsers).length);
-      console.log('Looking for email:', normalizedEmail);
-      
-      // Try to find user with exact email match
-      let user = await getUserByEmail(normalizedEmail);
-      console.log('Found user with exact match:', user);
-      
-      // If not found, try to find with case-insensitive search
-      if (!user) {
-        const allUserEmails = Object.keys(allUsers);
-        const matchingEmail = allUserEmails.find(email => 
-          email.toLowerCase() === normalizedEmail.toLowerCase()
-        );
-        
-        if (matchingEmail) {
-          user = allUsers[matchingEmail];
-          console.log('Found user with case-insensitive match:', user);
+      // Sign in with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password: data.password,
+      });
+
+      if (authError) {
+        console.error('Supabase auth error:', authError);
+        if (authError.message.includes('Invalid login credentials')) {
+          throw new Error('Onjuiste inloggegevens');
         }
-      }
-      
-      if (!user) {
-        console.log('No user found with email:', normalizedEmail);
-        console.log('Available emails:', Object.keys(allUsers));
-        
-        // Check if there are any users at all
-        if (Object.keys(allUsers).length === 0) {
-          throw new Error('Er zijn nog geen accounts geregistreerd op dit apparaat. Maak eerst een account aan.');
-        } else {
-          throw new Error('Geen account gevonden met dit e-mailadres op dit apparaat. Accounts zijn apparaat-specifiek - maak een nieuw account aan of gebruik het apparaat waar je je oorspronkelijk hebt geregistreerd.');
+        if (authError.message.includes('Email not confirmed')) {
+          throw new Error('E-mail nog niet bevestigd. Controleer je inbox.');
         }
+        throw new Error(authError.message);
       }
-      
-      // In real app, you'd validate password hash here
-      await setCurrentUser(user.email);
-      
+
+      if (!authData.user) {
+        throw new Error('Inloggen mislukt - geen gebruiker ontvangen');
+      }
+
+      // Convert to our User type
+      const user = await convertSupabaseUser(authData.user);
       console.log('Login successful for:', user.email);
+      
       return user;
     },
     onSuccess: (user) => {
       console.log('Login successful, updating queries');
       queryClient.setQueryData(['currentUser'], user);
-      queryClient.setQueryData(['currentUserEmail'], user.email);
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      queryClient.invalidateQueries({ queryKey: ['currentUserEmail'] });
     },
     onError: (error) => {
       console.error('Login failed:', error);
@@ -234,21 +191,26 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const logoutMutation = useMutation({
     mutationFn: async (): Promise<void> => {
       console.log('Starting logout process...');
-      await clearCurrentUser();
-      console.log('Current user cleared from storage');
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Supabase logout error:', error);
+        throw new Error('Uitloggen mislukt');
+      }
+      
+      console.log('Successfully logged out from Supabase');
     },
     onSuccess: () => {
       console.log('Logout successful, clearing all data');
       // Immediately set queries to null to trigger state change
       queryClient.setQueryData(['currentUser'], null);
-      queryClient.setQueryData(['currentUserEmail'], null);
       
       // Clear all cached data including bird data
       queryClient.clear();
       
       // Force immediate refetch of auth queries
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      queryClient.invalidateQueries({ queryKey: ['currentUserEmail'] });
       
       console.log('All queries cleared and user logged out');
     },
@@ -261,17 +223,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   // Computed values
   const user = userQuery.data;
-  const currentEmail = currentEmailQuery.data;
-  const isLoading = userQuery.isLoading || currentEmailQuery.isLoading;
-  // User is authenticated if both user and current email exist and match
-  const isAuthenticated = !!(user && currentEmail && user.email === currentEmail);
+  const isLoading = userQuery.isLoading;
+  const isAuthenticated = !!user;
   
   console.log('Auth Debug:', { 
     hasUser: !!user, 
-    hasCurrentEmail: !!currentEmail, 
-    emailsMatch: user?.email === currentEmail,
     isAuthenticated,
-    isLoading 
+    isLoading,
+    userEmail: user?.email
   });
   
   // All users can perform all actions in free version
@@ -288,7 +247,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     // Actions
     register: registerMutation.mutate,
     login: loginMutation.mutate,
-    logout: logoutMutation.mutateAsync, // Use mutateAsync to return a promise
+    logout: logoutMutation.mutateAsync,
     
     // Helpers
     canPerformAction,
