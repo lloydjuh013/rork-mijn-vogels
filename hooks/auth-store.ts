@@ -25,11 +25,13 @@ type RegisterData = {
 // Helper function to convert Supabase user to our User type
 const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> => {
   // Get user profile from profiles table
-  const { data: profile, error } = await supabase
+  const { data: profiles, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', supabaseUser.id)
-    .single();
+    .limit(1);
+
+  const profile = profiles?.[0];
 
   if (error || !profile) {
     console.log('Profile not found for user:', supabaseUser.id);
@@ -38,11 +40,13 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Try to fetch the profile again in case the trigger created it
-    const { data: retryProfile, error: retryError } = await supabase
+    const { data: retryProfiles, error: retryError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', supabaseUser.id)
-      .single();
+      .limit(1);
+      
+    const retryProfile = retryProfiles?.[0];
       
     if (retryProfile) {
       console.log('Profile found after retry:', retryProfile);
@@ -65,11 +69,12 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
     };
 
     // Try to create profile manually (this might fail due to RLS, which is expected)
-    const { data: insertedProfile, error: insertError } = await supabase
+    const { data: insertedProfiles, error: insertError } = await supabase
       .from('profiles')
       .insert(newProfile)
-      .select()
-      .single();
+      .select();
+      
+    const insertedProfile = insertedProfiles?.[0];
 
     if (insertError) {
       console.log('Manual profile creation failed (expected if RLS is working):', insertError.message);
@@ -82,11 +87,13 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         // Try to fetch the profile created by the trigger
-        const { data: triggerProfile, error: triggerFetchError } = await supabase
+        const { data: triggerProfiles, error: triggerFetchError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', supabaseUser.id)
-          .single();
+          .limit(1);
+          
+        const triggerProfile = triggerProfiles?.[0];
           
         if (triggerProfile) {
           console.log('Profile created by trigger:', triggerProfile);
@@ -109,11 +116,13 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
         console.log('Profile already exists from trigger, fetching existing profile');
         
         // Try to fetch the existing profile created by the trigger
-        const { data: existingProfile, error: fetchError } = await supabase
+        const { data: existingProfiles, error: fetchError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', supabaseUser.id)
-          .single();
+          .limit(1);
+          
+        const existingProfile = existingProfiles?.[0];
           
         if (existingProfile) {
           console.log('Found existing profile:', existingProfile);
