@@ -69,7 +69,7 @@ export type Nest = {
 export type Aviary = {
   id: string;
   name: string;
-  location: string;
+  location?: string;
   capacity: number;
   notes?: string;
   description?: string;
