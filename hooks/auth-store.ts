@@ -71,12 +71,13 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
       .single();
 
     if (insertError) {
-      console.error('Error creating profile:', {
+      console.error('Error creating profile:', insertError.message);
+      console.error('Full error object:', JSON.stringify(insertError, null, 2));
+      console.error('Error details:', {
         message: insertError.message,
         details: insertError.details,
         hint: insertError.hint,
-        code: insertError.code,
-        fullError: insertError
+        code: insertError.code
       });
       
       // Check if the error is due to duplicate key (profile already exists from trigger)
@@ -102,7 +103,8 @@ const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> =>
         }
         
         if (fetchError) {
-          console.error('Error fetching existing profile:', {
+          console.error('Error fetching existing profile:', fetchError.message);
+          console.error('Fetch error details:', {
             message: fetchError.message,
             details: fetchError.details,
             hint: fetchError.hint,

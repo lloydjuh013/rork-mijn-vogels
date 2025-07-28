@@ -13,7 +13,8 @@ const getBirds = async (userId: string): Promise<Bird[]> => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching birds:', {
+    console.error('Error fetching birds:', error.message);
+    console.error('Birds error details:', {
       message: error.message,
       details: error.details,
       hint: error.hint,
@@ -54,12 +55,12 @@ const getCouples = async (userId: string): Promise<Couple[]> => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching couples:', {
+    console.error('Error fetching couples:', error.message);
+    console.error('Couples error details:', {
       message: error.message,
       details: error.details,
       hint: error.hint,
-      code: error.code,
-      fullError: error
+      code: error.code
     });
     throw error;
   }
@@ -83,12 +84,12 @@ const getAviaries = async (userId: string): Promise<Aviary[]> => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching aviaries:', {
+    console.error('Error fetching aviaries:', error.message);
+    console.error('Aviaries error details:', {
       message: error.message,
       details: error.details,
       hint: error.hint,
-      code: error.code,
-      fullError: error
+      code: error.code
     });
     throw error;
   }
@@ -116,12 +117,12 @@ const getNests = async (userId: string): Promise<Nest[]> => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching nests:', {
+    console.error('Error fetching nests:', error.message);
+    console.error('Nests error details:', {
       message: error.message,
       details: error.details,
       hint: error.hint,
-      code: error.code,
-      fullError: error
+      code: error.code
     });
 
     throw error;
