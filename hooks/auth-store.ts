@@ -221,8 +221,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (authError) {
         console.error('Supabase auth error:', {
           message: authError.message,
-          status: authError.status,
-          statusText: authError.statusText
+          status: authError.status
         });
         console.error('Full auth error:', authError);
         
@@ -284,8 +283,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (authError) {
         console.error('Supabase auth error:', {
           message: authError.message,
-          status: authError.status,
-          statusText: authError.statusText
+          status: authError.status
         });
         console.error('Full auth error:', authError);
         
